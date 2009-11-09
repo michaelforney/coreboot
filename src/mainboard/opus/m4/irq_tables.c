@@ -36,9 +36,6 @@ extern  unsigned char bus_ck804_2; //3
 extern  unsigned char bus_ck804_3; //4
 extern  unsigned char bus_ck804_4; //5
 extern  unsigned char bus_ck804_5; //6
-extern  unsigned char bus_8131_0;  //7
-extern  unsigned char bus_8131_1;  //8
-extern  unsigned char bus_8131_2;  //9
 extern  unsigned char bus_ck804b_0;//a
 extern  unsigned char bus_ck804b_1;//b
 extern  unsigned char bus_ck804b_2;//c
@@ -47,7 +44,6 @@ extern  unsigned char bus_ck804b_4;//e
 extern  unsigned char bus_ck804b_5;//f
 
 
-extern  unsigned sbdn3;
 extern  unsigned sbdnb;
 
 extern void get_bus_conf(void);
@@ -101,67 +97,23 @@ unsigned long write_pirq_routing_table(unsigned long addr)
 	write_pirq_info(pirq_info, bus_8131_0, (sbdn3<<3)|0, 0x1, 0xdef8, 0x2, 0xdef8, 0x3, 0xdef8, 0x4, 0xdef8, 0, 0);
 	pirq_info++; slot_num++;
 
-	if(sysconf.pci1234[2] & 0xf) {
-	//second pci bridge
-		write_pirq_info(pirq_info, bus_ck804b_0, ((sbdnb+9)<<3)|0, 0x1, 0xdef8, 0x2, 0xdef8, 0x3, 0xdef8, 0x4, 0xdef8, 0x0, 0);
-		pirq_info++; slot_num++;
-	}
-#if 0
-//smbus
-	write_pirq_info(pirq_info, bus_ck804_0, ((sbdn+1)<<3)|0, 0x2, 0xdef8, 0, 0, 0, 0, 0, 0, 0, 0);
-	pirq_info++; slot_num++;
+    int j = 0;
 
-//usb
-	write_pirq_info(pirq_info, bus_ck804_0, ((sbdn+2)<<3)|0, 0x1, 0xdef8, 0x2, 0xdef8, 0, 0, 0, 0, 0, 0);
-	pirq_info++; slot_num++;
+    for (i = 1; i < sysconf.hc_possible_num; i++)
+    {
+        if (!(sysconf.pci1234[i] & 0x1))
+        {
+            continue;
+        }
 
-//audio
-	write_pirq_info(pirq_info, bus_ck804_0, ((sbdn+4)<<3)|0, 0x1, 0xdef8, 0, 0, 0, 0, 0, 0, 0, 0);
-	pirq_info++; slot_num++;
-//sata
-	write_pirq_info(pirq_info, bus_ck804_0, ((sbdn+7)<<3)|0, 0x1, 0xdef8, 0, 0, 0, 0, 0, 0, 0, 0);
-	pirq_info++; slot_num++;
-//sata
-	write_pirq_info(pirq_info, bus_ck804_0, ((sbdn+8)<<3)|0, 0x1, 0xdef8, 0, 0, 0, 0, 0, 0, 0, 0);
-	pirq_info++; slot_num++;
-//nic
-	write_pirq_info(pirq_info, bus_ck804_0, ((sbdn+0xa)<<3)|0, 0x1, 0xdef8, 0, 0, 0, 0, 0, 0, 0, 0);
-	pirq_info++; slot_num++;
+        unsigned busn = (sysconf.pci1234[i] >> 16) & 0xff;
+        unsigned devn = sysconf.hcdn[i] & 0xff;
 
-//Slot1 PCIE x16
-	write_pirq_info(pirq_info, bus_ck804_5, (0<<3)|0, 0x3, 0xdef8, 0x4, 0xdef8, 0x1, 0xdef8, 0x2, 0xdef8, 1, 0);
-	pirq_info++; slot_num++;
-
-//firewire
-	write_pirq_info(pirq_info, bus_ck804_1, (0x5<<3)|0, 0x3, 0xdef8, 0, 0, 0, 0, 0, 0, 0, 0);
-	pirq_info++; slot_num++;
-
-//Slot2 pci
-	write_pirq_info(pirq_info, bus_ck804_1, (0x4<<3)|0, 0x1, 0xdef8, 0x2, 0xdef8, 0x3, 0xdef8, 0x4, 0xdef8, 2, 0);
-	pirq_info++; slot_num++;
-//nic
-	write_pirq_info(pirq_info, bus_ck804b_0, ((sbdnb+0xa)<<3)|0, 0x1, 0xdef8, 0, 0, 0, 0, 0, 0, 0, 0);
-	pirq_info++; slot_num++;
-//Slot3 PCIE x16
-	write_pirq_info(pirq_info, bus_ck804b_5, (0<<3)|0, 0x3, 0xdef8, 0x4, 0xdef8, 0x1, 0xdef8, 0x2, 0xdef8, 3, 0);
-	pirq_info++; slot_num++;
-
-//Slot4 PCIX
-	write_pirq_info(pirq_info, bus_8131_2, (4<<3)|0, 0x1, 0xdef8, 0x2, 0xdef8, 0x3, 0xdef8, 0x4, 0xdef8, 4, 0);
-	pirq_info++; slot_num++;
-
-//Slot5 PCIX
-	write_pirq_info(pirq_info, bus_8131_2, (9<<3)|0, 0x2, 0xdef8, 0x3, 0xdef8, 0x4, 0xdef8, 0x1, 0xdef8, 5, 0);
-	pirq_info++; slot_num++;
-
-//onboard scsi
-	write_pirq_info(pirq_info, bus_8131_2, (6<<3)|0, 0x2, 0xdef8, 0x3, 0xdef8, 0, 0, 0, 0, 0, 0);
-	pirq_info++; slot_num++;
-
-//Slot6 PCIX
-	write_pirq_info(pirq_info, bus_8131_1, (4<<3)|0, 0x1, 0xdef8, 0x2, 0xdef8, 0x3, 0xdef8, 0x4, 0xdef8, 6, 0);
-	pirq_info++; slot_num++;
-#endif
+        write_pirq_info(pirq_info, busn, (devn << 3) | 0, 0x1, 0xdef8, 0x2, 0xdef8, 0x3, 0xdef8, 0x4, 0xdef8, 0, 0);
+        pirq_info++;
+        slot_num++;
+        j++;
+    }
 
 	pirq->size = 32 + 16 * slot_num;
 
