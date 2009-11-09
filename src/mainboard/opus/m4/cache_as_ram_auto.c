@@ -9,6 +9,8 @@
 #define SET_NB_CFG_54 1
 #endif
 
+#define DEBUG_SMBUS 1
+
 #include <stdint.h>
 #include <string.h>
 #include <device/pci_def.h>
@@ -36,9 +38,9 @@
 
 #include "cpu/x86/lapic/boot_cpu.c"
 #include "northbridge/amd/amdk8/reset_test.c"
-#include "superio/smsc/lpc47b397/lpc47b397_early_serial.c"
-#include "superio/smsc/lpc47b397/lpc47b397_early_gpio.c"
-#define SUPERIO_GPIO_DEV PNP_DEV(0x2e, LPC47B397_RT)
+#include "superio/smsc/lpc47m192/lpc47m192_early_serial.c"
+#include "superio/smsc/lpc47m192/lpc47m192_early_gpio.c"
+#define SUPERIO_GPIO_DEV PNP_DEV(0x2e, LPC47M192_RT)
 
 #define SUPERIO_GPIO_IO_BASE 0x400
 
@@ -52,7 +54,7 @@
 
 #include "northbridge/amd/amdk8/setup_resource_map.c"
 
-#define SERIAL_DEV PNP_DEV(0x2e, LPC47B397_SP1)
+#define SERIAL_DEV PNP_DEV(0x2e, LPC47M192_SP1)
 
 static void memreset_setup(void)
 {
@@ -66,11 +68,7 @@ static void sio_gpio_setup(void){
 
 	unsigned value;
 
-	/*Enable onboard scsi*/
-	lpc47b397_gpio_offset_out(SUPERIO_GPIO_IO_BASE, 0x2c, (1<<7)|(0<<2)|(0<<1)|(0<<0)); // GP21, offset 0x2c, DISABLE_SCSI_L
-	value = lpc47b397_gpio_offset_in(SUPERIO_GPIO_IO_BASE, 0x4c);
-	lpc47b397_gpio_offset_out(SUPERIO_GPIO_IO_BASE, 0x4c, (value|(1<<1)));
-
+    lpc47m192_gpio_offset_out(SUPERIO_GPIO_IO_BASE, 0x4d, (value | (1 << 4)));
 }
 
 static inline void activate_spd_rom(const struct mem_controller *ctrl)
@@ -84,7 +82,7 @@ static inline int spd_read_byte(unsigned device, unsigned address)
 }
 
 #include "northbridge/amd/amdk8/raminit.c"
-#include "northbridge/amd/amdk8/coherent_ht.c"
+#include "northbridge/amd/amdk8/coherent_ht_car.c"
 #include "lib/generic_sdram.c"
 
  /* tyan does not want the default */
@@ -93,6 +91,7 @@ static inline int spd_read_byte(unsigned device, unsigned address)
 #include "cpu/amd/dualcore/dualcore.c"
 
 #define CK804_NUM 2
+#define CK804B_BUSN 0x40
 #define CK804_USE_NIC 1
 #define CK804_USE_ACI 1
 
@@ -100,12 +99,7 @@ static inline int spd_read_byte(unsigned device, unsigned address)
 
 //set GPIO to input mode
 #define CK804_MB_SETUP \
-	RES_PORT_IO_8, SYSCTRL_IO_BASE + 0xc0+ 5, ~(0xff),((0<<4)|(0<<2)|(0<<0)),/* M9,GPIO6, PCIXB2_PRSNT1_L*/  \
-	RES_PORT_IO_8, SYSCTRL_IO_BASE + 0xc0+15, ~(0xff),((0<<4)|(0<<2)|(0<<0)),/* M8,GPIO16, PCIXB2_PRSNT2_L*/ \
-	RES_PORT_IO_8, SYSCTRL_IO_BASE + 0xc0+44, ~(0xff),((0<<4)|(0<<2)|(0<<0)),/* P5,GPIO45, PCIXA_PRSNT1_L*/  \
-	RES_PORT_IO_8, SYSCTRL_IO_BASE + 0xc0+ 7, ~(0xff),((0<<4)|(0<<2)|(0<<0)),/* M5,GPIO8, PCIXA_PRSNT2_L*/   \
-	RES_PORT_IO_8, SYSCTRL_IO_BASE + 0xc0+16, ~(0xff),((0<<4)|(0<<2)|(0<<0)),/* K4,GPIO17, PCIXB_PRSNT1_L*/  \
-	RES_PORT_IO_8, SYSCTRL_IO_BASE + 0xc0+45, ~(0xff),((0<<4)|(0<<2)|(0<<0)),/* P7,GPIO46, PCIXB_PRSNT2_L*/
+    RES_PORT_IO_8, SYSCTRL_IO_BASE + 0xc0+ 2, ~(0xff),((0<<4)|(0<<2)|(0<<0)),/* GPIO3, AMI */
 
 #include "southbridge/nvidia/ck804/ck804_early_setup_car.c"
 
@@ -138,15 +132,11 @@ static void sio_setup(void)
 	dword |= (1<<29)|(1<<0);
 	pci_write_config32(PCI_DEV(0, CK804_DEVN_BASE+1 , 0), 0xa0, dword);
 
+    /* Hope I can enable port 80 here
+     * It well decode port 80 to LPC, If you are using PCI post code you can not do this */
 	dword = pci_read_config32(PCI_DEV(0, CK804_DEVN_BASE+1, 0), 0xa4);
 	dword |= (1<<16);
 	pci_write_config32(PCI_DEV(0, CK804_DEVN_BASE+1 , 0), 0xa4, dword);
-
-	lpc47b397_enable_serial(SUPERIO_GPIO_DEV, SUPERIO_GPIO_IO_BASE);
-	value = lpc47b397_gpio_offset_in(SUPERIO_GPIO_IO_BASE, 0x77);
-	value &= 0xbf;
-	lpc47b397_gpio_offset_out(SUPERIO_GPIO_IO_BASE, 0x77, value);
-
 }
 
 void failover_process(unsigned long bist, unsigned long cpu_init_detectedx)
@@ -246,7 +236,7 @@ void real_main(unsigned long bist, unsigned long cpu_init_detectedx)
 
 //	post_code(0x32);
 
-	lpc47b397_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
+	lpc47m192_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
 	uart_init();
 	console_init();
 
@@ -268,7 +258,9 @@ void real_main(unsigned long bist, unsigned long cpu_init_detectedx)
 
 	needs_reset |= ht_setup_chains_x();
 
-	needs_reset |= ck804_early_setup_x();
+    /* FIXME (Michael Forney): Is this necessary? */
+	//needs_reset |=
+    ck804_early_setup_x();
 
 	if (needs_reset) {
 		printk_info("ht reset -\n");
@@ -282,6 +274,8 @@ void real_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	fill_mem_ctrl(nodes, ctrl, spd_addr);
 
 	enable_smbus();
+
+    dump_smbus_registers();
 
 	memreset_setup();
 	sdram_initialize(nodes, ctrl);
