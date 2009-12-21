@@ -38,11 +38,7 @@
 
 #include "cpu/x86/lapic/boot_cpu.c"
 #include "northbridge/amd/amdk8/reset_test.c"
-#include "superio/smsc/lpc47m192/lpc47m192_early_serial.c"
-#include "superio/smsc/lpc47m192/lpc47m192_early_gpio.c"
-#define SUPERIO_GPIO_DEV PNP_DEV(0x2e, LPC47M192_RT)
-
-#define SUPERIO_GPIO_IO_BASE 0x400
+#include "superio/smsc/smscsuperio/smscsuperio_early_serial.c"
 
 #if CONFIG_USE_FAILOVER_IMAGE==0
 
@@ -54,7 +50,7 @@
 
 #include "northbridge/amd/amdk8/setup_resource_map.c"
 
-#define SERIAL_DEV PNP_DEV(0x2e, LPC47M192_SP1)
+#define SERIAL_DEV PNP_DEV(0x2e, SMSCSUPERIO_SP1)
 
 static void memreset_setup(void)
 {
@@ -62,13 +58,6 @@ static void memreset_setup(void)
 
 static void memreset(int controllers, const struct mem_controller *ctrl)
 {
-}
-
-static void sio_gpio_setup(void){
-
-	unsigned value;
-
-    lpc47m192_gpio_offset_out(SUPERIO_GPIO_IO_BASE, 0x4d, (value | (1 << 4)));
 }
 
 static inline void activate_spd_rom(const struct mem_controller *ctrl)
@@ -82,7 +71,7 @@ static inline int spd_read_byte(unsigned device, unsigned address)
 }
 
 #include "northbridge/amd/amdk8/raminit.c"
-#include "northbridge/amd/amdk8/coherent_ht_car.c"
+#include "northbridge/amd/amdk8/coherent_ht.c"
 #include "lib/generic_sdram.c"
 
  /* tyan does not want the default */
@@ -236,14 +225,12 @@ void real_main(unsigned long bist, unsigned long cpu_init_detectedx)
 
 //	post_code(0x32);
 
-	lpc47m192_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
+	smscsuperio_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
 	uart_init();
 	console_init();
 
 	/* Halt if there was a built in self test failure */
 	report_bist_failure(bist);
-
-	sio_gpio_setup();
 
 	setup_mb_resource_map();
 
