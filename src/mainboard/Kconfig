@@ -82,6 +82,8 @@ config VENDOR_NOKIA
 	bool "Nokia"
 config VENDOR_NVIDIA
 	bool "NVIDIA"
+config VENDOR_OPUS
+	bool "Opus"
 config VENDOR_PC_ENGINES
 	bool "PC Engines"
 config VENDOR_RCA
@@ -154,6 +156,7 @@ source "src/mainboard/nec/Kconfig"
 source "src/mainboard/newisys/Kconfig"
 source "src/mainboard/nokia/Kconfig"
 source "src/mainboard/nvidia/Kconfig"
+source "src/mainboard/opus/Kconfig"
 source "src/mainboard/pcengines/Kconfig"
 source "src/mainboard/rca/Kconfig"
 source "src/mainboard/roda/Kconfig"
