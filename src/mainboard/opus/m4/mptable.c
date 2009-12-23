@@ -171,7 +171,7 @@ static void *smp_write_config_table(void *v)
 			0x10 + (1 + i + 4 - sbdn % 4) % 4);
 	}
 
-	//Slot 2 PCI 32
+	// Slot 2 PCI 32
 	for(i = 0; i < 4; i++) {
 		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
 			bus_ck804_1, (0x04 << 2) | i, apicid_ck804,
@@ -179,33 +179,33 @@ static void *smp_write_config_table(void *v)
 	}
 
 	if(sysconf.pci1234[2] & 0xf) { // If the second CPU is installed
-		//Onboard ck804b SATA 0
+		// Onboard ck804b SATA 0
 		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
 			bus_ck804b_0, ((sbdnb + 7) << 2) | 0, apicid_ck804b,
 			0x17);
 
-		//Onboard ck804b SATA 1
+		// Onboard ck804b SATA 1
 		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
 			bus_ck804b_0, ((sbdnb + 8) << 2) | 0, apicid_ck804b,
 			0x16);
 
-		//Onboard ck804b NIC
+		// Onboard ck804b NIC
 		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
 			bus_ck804b_0, ((sbdnb + 10) << 2) | 0, apicid_ck804b,
 			0x15);
 
-		//Slot 5 ck804b PCIE x16
+		// Slot 5 ck804b PCIE x16
 		for(i = 0; i < 4; i++) {
 			smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
 				bus_ck804b_5, (0x00 << 2) | i, apicid_ck804b,
-				0x10 + (2 + i + 4 -sbdnb % 4) % 4);
+				0x10 + (2 + i + 4 - sbdnb % 4) % 4);
 		}
 
-		//Slot 3 ck804b PCIE x4
+		// Slot 3 ck804b PCIE x4
 		for(i = 0; i < 4; i++) {
 			smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
 				bus_ck804b_4, (0x00 << 2) | i, apicid_ck804b,
-				0x10 + (1 + i+ 4 - sbdnb % 4) % 4);
+				0x10 + (1 + i + 4 - sbdnb % 4) % 4);
 		}
         }
 

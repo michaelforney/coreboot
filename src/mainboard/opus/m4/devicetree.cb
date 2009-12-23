@@ -1,3 +1,5 @@
+# vim: set noet ts=8 sts=8 syntax=conf
+
 chip northbridge/amd/amdk8/root_complex
 	device apic_cluster 0 on
 		chip cpu/amd/socket_940
@@ -75,12 +77,7 @@ chip northbridge/amd/amdk8/root_complex
 							device i2c 57 on end
 						end
 					end # SM
-					device pci 1.1 on # SM 1
-						#chip drivers/generic/generic #MAC EEPROM
-						#	device i2c 51 on end
-						#end
-
-					end # SM
+					device pci 1.1 on end # SM 1
 					device pci 2.0 on end # USB 1.1
 					device pci 2.1 on end # USB 2
 					device pci 4.0 on end # ACI
