@@ -74,9 +74,6 @@ static inline int spd_read_byte(unsigned device, unsigned address)
 #include "northbridge/amd/amdk8/coherent_ht.c"
 #include "lib/generic_sdram.c"
 
- /* tyan does not want the default */
-#include "resourcemap.c"
-
 #include "cpu/amd/dualcore/dualcore.c"
 
 #define CK804_NUM 2
@@ -227,7 +224,7 @@ void real_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	/* Halt if there was a built in self test failure */
 	report_bist_failure(bist);
 
-	setup_mb_resource_map();
+	//setup_mb_resource_map();
 
 	needs_reset = setup_coherent_ht_domain();
 
@@ -240,9 +237,7 @@ void real_main(unsigned long bist, unsigned long cpu_init_detectedx)
 
 	needs_reset |= ht_setup_chains_x();
 
-    /* FIXME (Michael Forney): Is this necessary? */
-	//needs_reset |=
-    ck804_early_setup_x();
+	needs_reset |= ck804_early_setup_x();
 
 	if (needs_reset) {
 		printk_info("ht reset -\n");
