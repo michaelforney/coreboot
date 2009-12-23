@@ -19,10 +19,7 @@
 
 #define post_code(x) outb(x, 0x80)
 
-#include "superio/smsc/lpc47b397/lpc47b397_early_serial.c"
-#include "superio/smsc/lpc47b397/lpc47b397_early_gpio.c"
-#define SUPERIO_GPIO_DEV PNP_DEV(0x2e, LPC47B397_RT)
-#define SUPERIO_GPIO_IO_BASE 0x400
+#include "superio/smsc/smscsuperio/smscsuperio_early_serial.c"
 
 static void sio_setup(void)
 {
@@ -44,12 +41,6 @@ static void sio_setup(void)
 	dword = pci_read_config32(PCI_DEV(0, CK804_DEVN_BASE+1, 0), 0xa4);
 	dword |= (1<<16);
 	pci_write_config32(PCI_DEV(0, CK804_DEVN_BASE+1 , 0), 0xa4, dword);
-
-	lpc47b397_enable_serial(SUPERIO_GPIO_DEV, SUPERIO_GPIO_IO_BASE);
-	value = lpc47b397_gpio_offset_in(SUPERIO_GPIO_IO_BASE, 0x77);
-	value &= 0xbf;
-	lpc47b397_gpio_offset_out(SUPERIO_GPIO_IO_BASE, 0x77, value);
-
 }
 
 void mainboard_bsp_init()
