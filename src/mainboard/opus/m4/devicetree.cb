@@ -6,14 +6,14 @@ chip northbridge/amd/amdk8/root_complex
 	end
 	device pci_domain 0 on
 		chip northbridge/amd/amdk8 #mc0
-            device pci 18.0 on end
-            device pci 18.0 on end
+		device pci 18.0 on end
+		device pci 18.0 on end
 			device pci 18.0 on #  northbridge
 				#  devices on link 0, link 0 == LDT 0
 				chip southbridge/nvidia/ck804
 					device pci 0.0 on end   # HT
 					device pci 1.0 on # LPC
-						chip superio/smsc/lpc47m192
+						chip superio/smsc/smscsuperio
 							device pnp 2e.0 on #  Floppy
 								io 0x60 = 0x3f0
 								irq 0x70 = 6
@@ -44,9 +44,9 @@ chip northbridge/amd/amdk8/root_complex
 							device	pnp 2e.a on #  RT
 								io 0x60 = 0x400
 							end
-                            device  pnp 2e.b off # MPU 401
-                                io 0x60 = 0x330
-                            end
+							device  pnp 2e.b off # MPU 401
+							    io 0x60 = 0x330
+							end
 						end
 					end
 					device pci 1.1 on # SM 0
@@ -108,7 +108,7 @@ chip northbridge/amd/amdk8/root_complex
 		end #mc0
 
 		chip northbridge/amd/amdk8
-            device pci 19.0 on end
+			device pci 19.0 on end
 			device pci 19.0 on #  northbridge
 				#  devices on link 0, link 0 == LDT 0
 				chip southbridge/nvidia/ck804
@@ -128,8 +128,8 @@ chip northbridge/amd/amdk8/root_complex
 					device pci c.0 off end # PCI E 2
 					device pci d.0 on end # PCI E 1
 					device pci e.0 on end # PCI E 0
-                    register "sata0_enable" = "1"
-                    register "sata1_enable" = "1"
+					register "sata0_enable" = "1"
+					register "sata1_enable" = "1"
 					register "mac_eeprom_smbus" = "3"
 					register "mac_eeprom_addr" = "0x51"
 				end

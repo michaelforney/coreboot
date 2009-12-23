@@ -1,3 +1,5 @@
+// vim: noet sts=8 ts=8 fdm=syntax
+
 #include <console/console.h>
 #include <arch/smp/mpspec.h>
 #include <device/pci.h>
@@ -59,14 +61,14 @@ static void *smp_write_config_table(void *v)
 	get_bus_conf();
 	sbdn = sysconf.sbdn;
 
-/*Bus:		Bus ID	Type*/
-       /* define bus and isa numbers */
+	/* Bus:		Bus ID	Type*/
+	/* define bus and isa numbers */
 	for(bus_num = 0; bus_num < bus_isa; bus_num++) {
 		smp_write_bus(mc, bus_num, "PCI   ");
 	}
 	smp_write_bus(mc, bus_isa, "ISA   ");
 
-/*I/O APICs:	APIC ID	Version	State		Address*/
+	/* I/O APICs:	APIC ID	Version	State		Address*/
 	{
 		device_t dev;
 		struct resource *res;
@@ -128,69 +130,87 @@ static void *smp_write_config_table(void *v)
 	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_EDGE|MP_IRQ_POLARITY_HIGH,  bus_isa, 0xe, apicid_ck804, 0xe);
 	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_EDGE|MP_IRQ_POLARITY_HIGH,  bus_isa, 0xf, apicid_ck804, 0xf);
 
-// Onboard ck804 smbus
-	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804_0, ((sbdn+1)<<2)|1, apicid_ck804, 0xa);
-// 10
+	// Onboard ck804 smbus
+	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804_0, ((sbdn+1)<<2)|1, apicid_ck804, 0xa); // 10
 
-// Onboard ck804 USB 1.1
+	// Onboard ck804 USB 1.1
 	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804_0, ((sbdn+2)<<2)|0, apicid_ck804, 0x15); // 21
 
-// Onboard ck804 USB 2
+	// Onboard ck804 USB 2
 	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804_0, ((sbdn+2)<<2)|1, apicid_ck804, 0x14); // 20
 
-// Onboard ck804 Audio
+	// Onboard ck804 Audio
 	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804_0, ((sbdn+4)<<2)|0, apicid_ck804, 0x14); // 20
 
-// Onboard ck804 SATA 0
-	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804_0, ((sbdn +7)<<2)|0, apicid_ck804, 0x17); // 23
+	// Onboard ck804 SATA 0
+	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
+		bus_ck804_0, ((sbdn + 7) << 2) | 0, apicid_ck804,
+		0x17);
 
-// Onboard ck804 SATA 1
-	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804_0, ((sbdn +8)<<2)|0, apicid_ck804, 0x16); // 22
+	// Onboard ck804 SATA 1
+	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
+		bus_ck804_0, ((sbdn + 8) << 2) | 0, apicid_ck804,
+		0x16);
 
-// Onboard ck804 NIC
-	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804_0, ((sbdn +0x0a)<<2)|0, apicid_ck804, 0x15); // 21
+	// Onboard ck804 NIC
+	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
+		bus_ck804_0, ((sbdn + 10) << 2) | 0, apicid_ck804,
+		0x15);
 
-/* TODO: Michael Forney (Finish up the end of this file) */
-//Slot PCIE x16
-	for(i=0;i<4;i++) {
-		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804_5, (0x00<<2)|i, apicid_ck804, 0x10 + (2+i+4-sbdn%4)%4);
-	}
-	for(i=0;i<4;i++) {
-		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804_4, (0x00<<2)|i, apicid_ck804, 0x10 + (1+i+4-sbdn%4)%4);
-	}
-
-//Onboard Firewire
-	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804_1, (0x05<<2)|0, apicid_ck804, 0x13); // 19
-
-//Slot 2 PCI 32
-	for(i=0;i<4;i++) {
-		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804_1, (0x04<<2)|i, apicid_ck804, 0x10 + (0+i)%4); //16
+	// Slot 5 PCIE x16
+	for(i = 0; i < 4; i++) {
+		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
+			bus_ck804_5, (0x00 << 2) | i, apicid_ck804,
+			0x10 + (2 + i + 4 - sbdn % 4) % 4);
 	}
 
-	if(sysconf.pci1234[2] & 0xf) {
-//Onboard ck804b SATA 0
-	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804b_0, ((sbdnb+7)<<2)|0, apicid_ck804b, 0x17);//24+23
-//Onboard ck804b SATA 1
-	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804b_0, ((sbdnb+8)<<2)|0, apicid_ck804b, 0x16);//24+22
-//Onboard ck804b NIC
-	smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804b_0, ((sbdnb+0x0a)<<2)|0, apicid_ck804b, 0x15);//24+21=45
-
-
-//Channel B of 8131
-
-//Slot 5 ck804b PCIE x16
-	for(i=0;i<4;i++) {
-		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804b_5, (0x00<<2)|i, apicid_ck804b, 0x10 + (2+i+4-sbdnb%4)%4);
+	// Slot 1 PCIE x4
+	for(i = 0; i < 4; i++) {
+		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
+			bus_ck804_5, (0x00 << 2) | i, apicid_ck804,
+			0x10 + (1 + i + 4 - sbdn % 4) % 4);
 	}
 
-//Slot 3 ck804b PCIE x4
-	for(i=0;i<4;i++) {
-		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL|MP_IRQ_POLARITY_LOW, bus_ck804b_4, (0x00<<2)|i, apicid_ck804b, 0x10 + (1+i+4-sbdnb%4)%4);
+	//Slot 2 PCI 32
+	for(i = 0; i < 4; i++) {
+		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
+			bus_ck804_1, (0x04 << 2) | i, apicid_ck804,
+			0x10 + (0 + i) % 4);
 	}
+
+	if(sysconf.pci1234[2] & 0xf) { // If the second CPU is installed
+		//Onboard ck804b SATA 0
+		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
+			bus_ck804b_0, ((sbdnb + 7) << 2) | 0, apicid_ck804b,
+			0x17);
+
+		//Onboard ck804b SATA 1
+		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
+			bus_ck804b_0, ((sbdnb + 8) << 2) | 0, apicid_ck804b,
+			0x16);
+
+		//Onboard ck804b NIC
+		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
+			bus_ck804b_0, ((sbdnb + 10) << 2) | 0, apicid_ck804b,
+			0x15);
+
+		//Slot 5 ck804b PCIE x16
+		for(i = 0; i < 4; i++) {
+			smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
+				bus_ck804b_5, (0x00 << 2) | i, apicid_ck804b,
+				0x10 + (2 + i + 4 -sbdnb % 4) % 4);
+		}
+
+		//Slot 3 ck804b PCIE x4
+		for(i = 0; i < 4; i++) {
+			smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
+				bus_ck804b_4, (0x00 << 2) | i, apicid_ck804b,
+				0x10 + (1 + i+ 4 - sbdnb % 4) % 4);
+		}
         }
 
 
-/*Local Ints:	Type	Polarity    Trigger	Bus ID	 IRQ	APIC ID	PIN#*/
+	/* Local Ints:	Type	Polarity    Trigger	Bus ID	 IRQ	APIC ID	PIN#*/
 	smp_write_intsrc(mc, mp_ExtINT, MP_IRQ_TRIGGER_EDGE|MP_IRQ_POLARITY_HIGH, bus_isa, 0x0, MP_APIC_ALL, 0x0);
 	smp_write_intsrc(mc, mp_NMI, MP_IRQ_TRIGGER_EDGE|MP_IRQ_POLARITY_HIGH, bus_isa, 0x0, MP_APIC_ALL, 0x1);
 	/* There is no extension information... */
@@ -209,3 +229,4 @@ unsigned long write_smp_table(unsigned long addr)
 	v = smp_write_floating_table(addr);
 	return (unsigned long)smp_write_config_table(v);
 }
+
