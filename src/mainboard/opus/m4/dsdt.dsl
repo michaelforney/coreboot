@@ -251,6 +251,8 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "CORE  ", "CB-DSDT ", 1)
 						/* Since source is 0, index is IRQ. */
 						/* in ABCD, A=0, B=1, C=2, D=3 */
 						/* SlotFFFF, ABCD, source, index */
+				Package (0x04) { 0x0007FFFF, 0x00, 0x00, 0x37 }, /* 0x7 SATA 0 IRQ 55 */
+				Package (0x04) { 0x0008FFFF, 0x00, 0x00, 0x36 }, /* 0x8 SATA 1 IRQ 54 */
 				Package (0x04) { 0x000aFFFF, 0x00, 0x00, 0x35 }, /* 0xa LAN IRQ 53 */
 			})
 
