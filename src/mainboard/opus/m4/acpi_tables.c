@@ -58,21 +58,6 @@ unsigned long acpi_fill_madt(unsigned long current)
 		#endif
 	}
 
-	/* Write AMD 8131 two IOAPICs. */
-	dev = dev_find_slot(0x40, PCI_DEVFN(0x0,1));
-	if (dev) {
-		apic_addr = pci_read_config32(dev, PCI_BASE_ADDRESS_0) & ~0xf;
-		current += acpi_create_madt_ioapic((acpi_madt_ioapic_t *) current, 5,
-						   apic_addr, 0x18);
-	}
-
-	dev = dev_find_slot(0x40, PCI_DEVFN(0x1, 1));
-	if (dev) {
-		apic_addr = pci_read_config32(dev, PCI_BASE_ADDRESS_0) & ~0xf;
-		current += acpi_create_madt_ioapic((acpi_madt_ioapic_t *) current, 6,
-						   apic_addr, 0x1C);
-	}
-
 	/* Write second NVIDIA CK804 IOAPIC. */
 	dev = dev_find_slot(0x80, PCI_DEVFN(0x1, 0));
 	if (dev) {
