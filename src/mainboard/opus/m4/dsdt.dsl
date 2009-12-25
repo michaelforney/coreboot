@@ -105,7 +105,6 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "CORE  ", "CB-DSDT ", 1)
 					Package (0x04) { 0x0004FFFF, 0x01, 0x00, 0x11 },
 					Package (0x04) { 0x0004FFFF, 0x02, 0x00, 0x12 },
 					Package (0x04) { 0x0004FFFF, 0x03, 0x00, 0x13 },
-					Package (0x04) { 0x0005FFFF, 0x00, 0x00, 0x13 }, /* 1:05 IEEE-1394 IRQ 19 */
 				})
 			}
 
@@ -115,6 +114,20 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "CORE  ", "CB-DSDT ", 1)
 				Name (_ADR, 0x000e0000)
 				Name (_UID, 0x00)
 				Name (_BBN, 0x02)
+				Name (_PRT, Package () {
+					Package (0x04) { 0x0000FFFF, 0x00, 0x00, 0x12 }, /* PCIE IRQ16-IRQ19 */
+					Package (0x04) { 0x0000FFFF, 0x01, 0x00, 0x13 },
+					Package (0x04) { 0x0000FFFF, 0x02, 0x00, 0x10 },
+					Package (0x04) { 0x0000FFFF, 0x03, 0x00, 0x11 },
+				})
+			}
+
+			/* 2:00 PCIe x4 SB IRQ 18 */
+			Device (PE4)
+			{
+				Name (_ADR, 0x000e0000)
+				Name (_UID, 0x00)
+				Name (_BBN, 0x03)
 				Name (_PRT, Package () {
 					Package (0x04) { 0x0000FFFF, 0x00, 0x00, 0x12 }, /* PCIE IRQ16-IRQ19 */
 					Package (0x04) { 0x0000FFFF, 0x01, 0x00, 0x13 },
@@ -222,7 +235,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "CORE  ", "CB-DSDT ", 1)
 			Name (_HID, EisaId ("PNP0A03"))
 			Name (_ADR, 0x00)
 			Name (_UID, 0x00)
-			Name (_BBN, 0x80)
+			Name (_BBN, 0x40)
 
 			Method (_CRS, 0, NotSerialized)
 			{
@@ -256,14 +269,28 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "CORE  ", "CB-DSDT ", 1)
 				Package (0x04) { 0x000aFFFF, 0x00, 0x00, 0x35 }, /* 0xa LAN IRQ 53 */
 			})
 
-			/* PCIe x16 SB2 IRQ 18 */
+			/* 2:00 PCIe x16 SB IRQ 18 */
 			Device (PE16)
 			{
 				Name (_ADR, 0x000e0000)
 				Name (_UID, 0x00)
 				Name (_BBN, 0x81)
 				Name (_PRT, Package () {
-					Package (0x04) { 0x0000FFFF, 0x00, 0x00, 0x32 }, /* PCIE IRQ48-IRQ51 */
+					Package (0x04) { 0x0000FFFF, 0x00, 0x00, 0x32 }, /* PCIE IRQ16-IRQ19 */
+					Package (0x04) { 0x0000FFFF, 0x01, 0x00, 0x33 },
+					Package (0x04) { 0x0000FFFF, 0x02, 0x00, 0x30 },
+					Package (0x04) { 0x0000FFFF, 0x03, 0x00, 0x31 },
+				})
+			}
+
+			/* 2:00 PCIe x4 SB IRQ 18 */
+			Device (PE4)
+			{
+				Name (_ADR, 0x000e0000)
+				Name (_UID, 0x00)
+				Name (_BBN, 0x82)
+				Name (_PRT, Package () {
+					Package (0x04) { 0x0000FFFF, 0x00, 0x00, 0x32 }, /* PCIE IRQ16-IRQ19 */
 					Package (0x04) { 0x0000FFFF, 0x01, 0x00, 0x33 },
 					Package (0x04) { 0x0000FFFF, 0x02, 0x00, 0x30 },
 					Package (0x04) { 0x0000FFFF, 0x03, 0x00, 0x31 },
