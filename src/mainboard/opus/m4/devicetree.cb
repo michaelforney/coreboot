@@ -8,8 +8,8 @@ chip northbridge/amd/amdk8/root_complex
 	end
 	device pci_domain 0 on
 		chip northbridge/amd/amdk8 #mc0
-		device pci 18.0 on end
-		device pci 18.0 on end
+			device pci 18.0 on end # Link 0
+			device pci 18.0 on end # Link 1
 			device pci 18.0 on #  northbridge
 				#  devices on link 0, link 0 == LDT 0
 				chip southbridge/nvidia/ck804
@@ -21,7 +21,7 @@ chip northbridge/amd/amdk8/root_complex
 								irq 0x70 = 6
 								drq 0x74 = 2
 							end
-							device pnp 2e.3 on #  Parallel Port
+							device pnp 2e.3 off #  Parallel Port
 								io 0x60 = 0x378
 								irq 0x70 = 7
 								drq 0x74 = 4
@@ -37,8 +37,8 @@ chip northbridge/amd/amdk8/root_complex
 							device pnp 2e.7 on #  Keyboard
 								io 0x60 = 0x60
 								io 0x62 = 0x64
-								irq 0x70 = 1
-								irq 0x72 = 12
+								irq 0x70 = 1    # Keyboard interrupt
+								irq 0x72 = 12   # Mouse interrupt
 							end
 							device pnp 2e.9 off # Game Port
 								io 0x60 = 0x200
@@ -105,7 +105,7 @@ chip northbridge/amd/amdk8/root_complex
 		end #mc0
 
 		chip northbridge/amd/amdk8
-			device pci 19.0 on end
+			device pci 19.0 on end # Link 0
 			device pci 19.0 on #  northbridge
 				#  devices on link 0, link 0 == LDT 0
 				chip southbridge/nvidia/ck804
@@ -132,7 +132,7 @@ chip northbridge/amd/amdk8/root_complex
 				end
 			end #  device pci 19.0
 
-			device pci 19.0 on end
+			device pci 19.0 on end # Link 2
 			device pci 19.1 on end
 			device pci 19.2 on end
 			device pci 19.3 on end
