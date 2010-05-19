@@ -1,9 +1,9 @@
 # vim: set noet ts=8 sts=8 syntax=conf
 
 chip northbridge/amd/amdk8/root_complex
-	device apic_cluster 0 on
+	device lapic_cluster 0 on
 		chip cpu/amd/socket_940
-			device apic 0 on end
+			device lapic 0 on end
 		end
 	end
 	device pci_domain 0 on
