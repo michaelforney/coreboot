@@ -84,11 +84,6 @@ config USE_INIT
 	default n
 	depends on BOARD_OPUS_M4
 
-config WAIT_BEFORE_CPUS_INIT
-	bool
-	default n
-	depends on BOARD_OPUS_M4
-
 config SB_HT_CHAIN_ON_BUS0
 	int
 	default 2
