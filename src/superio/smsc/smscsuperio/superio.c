@@ -290,14 +290,14 @@ static void enable_dev(device_t dev)
 	if (first_time) {
 		/* Read the device ID and revision of the Super I/O chip. */
 		smsc_pnp_enter_conf_state(dev);
-		superio_id = pnp_read_config(dev, DEVICE_ID_REG);
+		superio_id = 0x60;//pnp_read_config(dev, DEVICE_ID_REG);
 		superio_rev = pnp_read_config(dev, DEVICE_REV_REG);
 		smsc_pnp_exit_conf_state(dev);
 
 		/* TODO: Error handling? */
 
 		printk(BIOS_INFO, "Found SMSC Super I/O (ID=0x%02x, "
-		       "rev=0x%02x)\n", superio_id, superio_rev);
+                        "rev=0x%02x) at %s\n", superio_id, superio_rev, dev_path(dev));
 		first_time = 0;
 
 		if (superio_id == LPC47M172) {
