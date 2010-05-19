@@ -1,5 +1,4 @@
 #define ASSEMBLY 1
-#define __PRE_RAM__
 
 #define K8_ALLOCATE_IO_RANGE 1
 
