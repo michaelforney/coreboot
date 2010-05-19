@@ -76,7 +76,6 @@ static inline int spd_read_byte(unsigned device, unsigned address)
 
 static void sio_setup(void)
 {
-	unsigned value;
 	u32 dword;
 	u8 byte;
 
@@ -161,8 +160,6 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	fill_mem_ctrl(nodes, ctrl, spd_addr);
 
 	enable_smbus();
-
-    dump_smbus_registers();
 
 	memreset_setup();
 	sdram_initialize(nodes, ctrl);
