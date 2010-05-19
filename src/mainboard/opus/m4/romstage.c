@@ -21,7 +21,6 @@
 #include "option_table.h"
 #include "pc80/mc146818rtc_early.c"
 
-#if CONFIG_USE_FAILOVER_IMAGE==0
 #include "pc80/serial.c"
 #include "arch/i386/lib/console.c"
 #include "lib/ramtest.c"
@@ -34,13 +33,9 @@
 #include "cpu/amd/model_fxx/apic_timer.c"
 #include "lib/delay.c"
 
-#endif
-
 #include "cpu/x86/lapic/boot_cpu.c"
 #include "northbridge/amd/amdk8/reset_test.c"
 #include "superio/smsc/smscsuperio/smscsuperio_early_serial.c"
-
-#if CONFIG_USE_FAILOVER_IMAGE==0
 
 #include "cpu/x86/bist.h"
 
@@ -89,8 +84,6 @@ static inline int spd_read_byte(unsigned device, unsigned address)
 
 #include "cpu/amd/model_fxx/init_cpus.c"
 
-#endif
-
 #include "southbridge/nvidia/ck804/ck804_enable_rom.c"
 #include "northbridge/amd/amdk8/early_ht.c"
 
@@ -117,8 +110,6 @@ static void sio_setup(void)
 	dword |= (1<<16);
 	pci_write_config32(PCI_DEV(0, CK804_DEVN_BASE+1 , 0), 0xa4, dword);
 }
-
-#if CONFIG_USE_FAILOVER_IMAGE==0
 
 void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 {
@@ -197,4 +188,3 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 
 	post_cache_as_ram();
 }
-#endif
