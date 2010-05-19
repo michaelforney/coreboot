@@ -26,8 +26,6 @@ extern  unsigned apicid_ck804b;
 
 extern  unsigned sbdnb;
 
-extern void get_bus_conf(void);
-
 static void *smp_write_config_table(void *v)
 {
 	static const char sig[4] = "PCMP";
