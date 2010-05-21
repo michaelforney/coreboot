@@ -255,9 +255,9 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "CORE  ", "CB-DSDT ", 1)
 				   otherwise the info from MMIO is used.
 				   \_SB.GXXX(node, link)
 				 */
-				Concatenate (\_SB.GMEM (0x01, 0x00), BUF0, Local1)
-				Concatenate (\_SB.GIOR (0x01, 0x00), Local1, Local2)
-				Concatenate (\_SB.GWBN (0x01, 0x00), Local2, Local3)
+				Concatenate (\_SB.GMEM (0x01, 0x01), BUF0, Local1)
+				Concatenate (\_SB.GIOR (0x01, 0x01), Local1, Local2)
+				Concatenate (\_SB.GWBN (0x01, 0x01), Local2, Local3)
 				Return (Local3)
 			}
 
