@@ -276,7 +276,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "CORE  ", "CB-DSDT ", 1)
 			{
 				Name (_ADR, 0x000e0000)
 				Name (_UID, 0x00)
-				Name (_BBN, 0x81)
+				Name (_BBN, 0x41)
 				Name (_PRT, Package () {
 					Package (0x04) { 0x0000FFFF, 0x00, 0x00, 0x32 }, /* PCIE IRQ16-IRQ19 */
 					Package (0x04) { 0x0000FFFF, 0x01, 0x00, 0x33 },
@@ -290,7 +290,7 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, "CORE  ", "CB-DSDT ", 1)
 			{
 				Name (_ADR, 0x000e0000)
 				Name (_UID, 0x00)
-				Name (_BBN, 0x82)
+				Name (_BBN, 0x42)
 				Name (_PRT, Package () {
 					Package (0x04) { 0x0000FFFF, 0x00, 0x00, 0x32 }, /* PCIE IRQ16-IRQ19 */
 					Package (0x04) { 0x0000FFFF, 0x01, 0x00, 0x33 },
