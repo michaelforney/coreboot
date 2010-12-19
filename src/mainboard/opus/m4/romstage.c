@@ -19,7 +19,7 @@
 #include "lib/delay.c"
 #include "cpu/x86/lapic/boot_cpu.c"
 #include "northbridge/amd/amdk8/reset_test.c"
-#include "superio/smsc/smscsuperio/smscsuperio_early_serial.c"
+#include "superio/smsc/smscsuperio/early_serial.c"
 #include "cpu/x86/bist.h"
 #include "northbridge/amd/amdk8/debug.c"
 #include <cpu/amd/mtrr.h>
