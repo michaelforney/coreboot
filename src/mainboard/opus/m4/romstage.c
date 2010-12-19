@@ -1,7 +1,3 @@
-#if CONFIG_LOGICAL_CPUS==1
-#define SET_NB_CFG_54 1
-#endif
-
 #define DEBUG_SMBUS 1
 
 #include <stdint.h>
