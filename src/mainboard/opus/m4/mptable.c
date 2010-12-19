@@ -158,13 +158,6 @@ static void *smp_write_config_table(void *v)
 			0x10 + (1 + i + 4 - sbdn % 4) % 4);
 	}
 
-	// Slot 2 PCI 32
-	for(i = 0; i < 4; i++) {
-		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
-			bus_ck804_1, (0x04 << 2) | i, apicid_ck804,
-			0x10 + (0 + i) % 4);
-	}
-
 	if(sysconf.pci1234[2] & 0xf) { // If the second CPU is installed
 		// Onboard ck804b SATA 0
 		smp_write_intsrc(mc, mp_INT, MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW,
