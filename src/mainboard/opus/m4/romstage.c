@@ -1,5 +1,3 @@
-#define DEBUG_SMBUS 1
-
 #include <stdint.h>
 #include <string.h>
 #include <device/pci_def.h>
@@ -41,9 +39,6 @@ static inline int spd_read_byte(unsigned device, unsigned address)
 #include "northbridge/amd/amdk8/coherent_ht.c"
 #include "lib/generic_sdram.c"
 #include "cpu/amd/dualcore/dualcore.c"
-
-#define CK804B_BUSN 0x40
-
 #include "southbridge/nvidia/ck804/early_setup_ss.h"
 #include "southbridge/nvidia/ck804/early_setup_car.c"
 #include "cpu/amd/car/post_cache_as_ram.c"
