@@ -46,7 +46,7 @@ static void pnp_exit_ext_func_mode(device_t dev)
 	pnp_write_config(dev, 0x02, 0x02);
 }
 
-#if !defined(CONFIG_SUPERIO_ITE_IT8716F_OVERRIDE_FANCTL) || !CONFIG_SUPERIO_ITE_IT8716F_OVERRIDE_FANCTL
+#if !CONFIG_SUPERIO_ITE_IT8716F_OVERRIDE_FANCTL
 static void pnp_write_index(u16 port_base, u8 reg, u8 value)
 {
 	outb(reg, port_base);
@@ -85,14 +85,6 @@ static void it8716f_init(device_t dev)
 
 	/* TODO: FDC, PP, KBCM, MIDI, GAME, IR. */
 	switch (dev->path.pnp.device) {
-	case IT8716F_SP1:
-		res0 = find_resource(dev, PNP_IDX_IO0);
-		init_uart8250(res0->base, &conf->com1);
-		break;
-	case IT8716F_SP2:
-		res0 = find_resource(dev, PNP_IDX_IO0);
-		init_uart8250(res0->base, &conf->com2);
-		break;
 	case IT8716F_EC:
 		res0 = find_resource(dev, PNP_IDX_IO0);
 #define EC_INDEX_PORT 5
@@ -122,7 +114,7 @@ static void it8716f_pnp_enable(device_t dev)
 {
 	pnp_enter_ext_func_mode(dev);
 	pnp_set_logical_device(dev);
-	pnp_set_enable(dev, dev->enabled);
+	pnp_set_enable(dev, !!dev->enabled);
 	pnp_exit_ext_func_mode(dev);
 }
 

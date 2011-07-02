@@ -19,13 +19,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef MCP55_H
-#define MCP55_H
+#ifndef SOUTHBRIDGE_NVIDIA_MCP55_MCP55_H
+#define SOUTHBRIDGE_NVIDIA_MCP55_MCP55_H
 
 #if CONFIG_HT_CHAIN_END_UNITID_BASE != 0x20
-	#define MCP55_DEVN_BASE CONFIG_HT_CHAIN_END_UNITID_BASE
+#define MCP55_DEVN_BASE CONFIG_HT_CHAIN_END_UNITID_BASE
 #else
-	#define MCP55_DEVN_BASE CONFIG_HT_CHAIN_UNITID_BASE
+#define MCP55_DEVN_BASE CONFIG_HT_CHAIN_UNITID_BASE
 #endif
 
 #ifndef __PRE_RAM__
@@ -35,8 +35,8 @@ extern struct pci_operations mcp55_pci_ops;
 #else
 #if !defined(__ROMCC__)
 void enable_fid_change_on_sb(unsigned sbbusn, unsigned sbdn);
-void mcp55_enable_usbdebug(unsigned int port);
+void enable_usbdebug(unsigned int port);
 #endif
 #endif
 
-#endif /* MCP55_H */
+#endif

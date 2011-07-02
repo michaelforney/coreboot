@@ -35,12 +35,31 @@ uint64_t uma_memory_base, uma_memory_size;
 void set_pcie_dereset(void);
 void set_pcie_reset(void);
 u8 is_dev3_present(void);
+
+static void pcie_rst_toggle(u8 val) {
+	u8 byte;
+
+	byte = pm_ioread(0x8d);
+	byte &= ~(3 << 1);
+	pm_iowrite(0x8d, byte);
+
+	byte = pm_ioread(0x94);
+	/* Output enable */
+	byte &= ~(3 << 2);
+	/* Toggle GPM8, GPM9 */
+	byte &= ~(3 << 0);
+	byte |= val;
+	pm_iowrite(0x94, byte);
+}
+
 void set_pcie_dereset()
 {
+    pcie_rst_toggle(0x3);
 }
 
 void set_pcie_reset()
 {
+    pcie_rst_toggle(0x0);
 }
 
 #if 0	     /* not tested yet */
@@ -149,7 +168,7 @@ struct chip_operations mainboard_ops = {
 };
 
 /* override the default SATA PHY setup */
-void sb700_setup_sata_phys(struct device *dev) {
+void sb7xx_51xx_setup_sata_phys(struct device *dev) {
 	/* RPR7.6.1 Program the PHY Global Control to 0x2C00 */
 	pci_write_config16(dev, 0x86, 0x2c00);
 

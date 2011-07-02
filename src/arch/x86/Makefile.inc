@@ -27,24 +27,24 @@ subdirs-y += smp
 
 OPTION_TABLE_H:=
 ifeq ($(CONFIG_HAVE_OPTION_TABLE),y)
-ramstage-srcs += $(obj)/option_table.c
+cbfs-files-y += cmos_layout.bin
+cmos_layout.bin-file = $(obj)/cmos_layout.bin
+cmos_layout.bin-type = 0x01aa
+
 OPTION_TABLE_H:=$(obj)/option_table.h
 endif
 
 #######################################################################
 # Build the final rom image
 COREBOOT_ROM_DEPENDENCIES:=
-ifneq ($(CONFIG_PAYLOAD_NONE),y)
-COREBOOT_ROM_DEPENDENCIES+=$(CONFIG_FALLBACK_PAYLOAD_FILE)
+ifeq ($(CONFIG_PAYLOAD_ELF),y)
+COREBOOT_ROM_DEPENDENCIES+=$(CONFIG_PAYLOAD_FILE)
 endif
-ifeq ($(CONFIG_VGA_BIOS),y)
-COREBOOT_ROM_DEPENDENCIES+=$(CONFIG_FALLBACK_VGA_BIOS_FILE)
+ifeq ($(CONFIG_PAYLOAD_SEABIOS),y)
+COREBOOT_ROM_DEPENDENCIES+=seabios
 endif
-ifeq ($(CONFIG_INTEL_MBI),y)
-COREBOOT_ROM_DEPENDENCIES+=$(CONFIG_FALLBACK_MBI_FILE)
-endif
-ifeq ($(CONFIG_BOOTSPLASH),y)
-COREBOOT_ROM_DEPENDENCIES+=$(CONFIG_FALLBACK_BOOTSPLASH_FILE)
+ifeq ($(CONFIG_PAYLOAD_FILO),y)
+COREBOOT_ROM_DEPENDENCIES+=filo
 endif
 ifeq ($(CONFIG_AP_CODE_IN_CAR),y)
 COREBOOT_ROM_DEPENDENCIES+=$(obj)/coreboot_ap
@@ -61,7 +61,7 @@ prebuild-files = \
 		$(CBFSTOOL) $@ add $(call extract_nth,1,$(file)) $(call extract_nth,2,$(file)) $(call extract_nth,3,$(file)) $(call extract_nth,4,$(file)); )
 prebuilt-files = $(foreach file,$(cbfs-files), $(call extract_nth,1,$(file)))
 
-$(obj)/coreboot.pre1: $(obj)/coreboot.bootblock $(prebuilt-files) $(CBFSTOOL)
+$(obj)/coreboot.pre1: $(obj)/coreboot.bootblock $$(prebuilt-files) $(CBFSTOOL)
 	rm -f $@
 	$(CBFSTOOL) $@ create $(CONFIG_COREBOOT_ROMSIZE_KB)K $(obj)/coreboot.bootblock
 	$(prebuild-files)
@@ -80,21 +80,18 @@ $(obj)/coreboot.rom: $(obj)/coreboot.pre $(obj)/coreboot_ram $(CBFSTOOL) $(call 
 	$(CBFSTOOL) $@.tmp add-stage $(obj)/coreboot_ram $(CONFIG_CBFS_PREFIX)/coreboot_ram $(CBFS_COMPRESS_FLAG)
 ifeq ($(CONFIG_PAYLOAD_NONE),y)
 	@printf "    PAYLOAD    \e[1;31mnone (as specified by user)\e[0m\n"
-else
-	@printf "    PAYLOAD    $(CONFIG_FALLBACK_PAYLOAD_FILE) (compression: $(CBFS_PAYLOAD_COMPRESS_NAME))\n"
-	$(CBFSTOOL) $@.tmp add-payload $(CONFIG_FALLBACK_PAYLOAD_FILE) $(CONFIG_CBFS_PREFIX)/payload $(CBFS_PAYLOAD_COMPRESS_FLAG)
 endif
-ifeq ($(CONFIG_VGA_BIOS),y)
-	@printf "    VGABIOS    $(CONFIG_FALLBACK_VGA_BIOS_FILE) $(CONFIG_FALLBACK_VGA_BIOS_ID)\n"
-	$(CBFSTOOL) $@.tmp add $(CONFIG_FALLBACK_VGA_BIOS_FILE) "pci$(CONFIG_FALLBACK_VGA_BIOS_ID).rom" optionrom
+ifeq ($(CONFIG_PAYLOAD_ELF),y)
+	@printf "    PAYLOAD    $(CONFIG_PAYLOAD_FILE) (compression: $(CBFS_PAYLOAD_COMPRESS_NAME))\n"
+	$(CBFSTOOL) $@.tmp add-payload $(CONFIG_PAYLOAD_FILE) $(CONFIG_CBFS_PREFIX)/payload $(CBFS_PAYLOAD_COMPRESS_FLAG)
 endif
-ifeq ($(CONFIG_INTEL_MBI),y)
-	@printf "    MBI        $(CONFIG_FALLBACK_MBI_FILE)\n"
-	$(CBFSTOOL) $@.tmp add $(CONFIG_FALLBACK_MBI_FILE) mbi.bin mbi
+ifeq ($(CONFIG_PAYLOAD_SEABIOS),y)
+	@printf "    PAYLOAD    SeaBIOS (internal, compression: $(CBFS_PAYLOAD_COMPRESS_NAME))\n"
+	$(CBFSTOOL) $@.tmp add-payload $(CONFIG_PAYLOAD_FILE) $(CONFIG_CBFS_PREFIX)/payload $(CBFS_PAYLOAD_COMPRESS_FLAG)
 endif
-ifeq ($(CONFIG_BOOTSPLASH),y)
-	@printf "    BOOTSPLASH $(CONFIG_FALLBACK_BOOTSPLASH_FILE)\n"
-	$(CBFSTOOL) $@.tmp add $(CONFIG_FALLBACK_BOOTSPLASH_FILE) bootsplash.jpg bootsplash
+ifeq ($(CONFIG_PAYLOAD_FILO),y)
+	@printf "    PAYLOAD    FILO (internal, compression: $(CBFS_PAYLOAD_COMPRESS_NAME))\n"
+	$(CBFSTOOL) $@.tmp add-payload $(CONFIG_PAYLOAD_FILE) $(CONFIG_CBFS_PREFIX)/payload $(CBFS_PAYLOAD_COMPRESS_FLAG)
 endif
 ifeq ($(CONFIG_GEODE_VSA_FILE),y)
 	@printf "    VSA        $(CONFIG_VSA_FILENAME)\n"
@@ -102,9 +99,29 @@ ifeq ($(CONFIG_GEODE_VSA_FILE),y)
 	$(LD) -m elf_i386 -e 0x60020 --section-start .data=0x60000 $(obj)/vsa.o -o $(obj)/vsa.elf
 	$(CBFSTOOL) $@.tmp add-stage $(obj)/vsa.elf vsa
 endif
+ifeq ($(CONFIG_INCLUDE_CONFIG_FILE),y)
+	@printf "    CONFIG     $(DOTCONFIG)\n"
+	if [ -f $(DOTCONFIG) ]; then \
+	echo "# This image was built using git revision" `git rev-parse HEAD` > $(obj)/config.tmp ; \
+	sed -e '/^#/d' -e '/^ *$$/d' $(DOTCONFIG) >> $(obj)/config.tmp ; \
+	$(CBFSTOOL) $@.tmp add $(obj)/config.tmp config raw; rm -f $(obj)/config.tmp ; fi
+endif
 	mv $@.tmp $@
 	@printf "    CBFSPRINT  $(subst $(obj)/,,$(@))\n\n"
 	$(CBFSTOOL) $@ print
+
+stripped_vgabios_id = $(call strip_quotes,$(CONFIG_VGA_BIOS_ID))
+cbfs-files-$(CONFIG_VGA_BIOS) += pci$(stripped_vgabios_id).rom
+pci$(stripped_vgabios_id).rom-file := $(call strip_quotes,$(CONFIG_VGA_BIOS_FILE))
+pci$(stripped_vgabios_id).rom-type := optionrom
+
+cbfs-files-$(CONFIG_INTEL_MBI) += mbi.bin
+mbi.bin-file := $(call strip_quotes,$(CONFIG_MBI_FILE))
+mbi.bin-type := mbi
+
+cbfs-files-$(CONFIG_BOOTSPLASH) += bootsplash.jpg
+bootsplash.jpg-file := $(call strip_quotes,$(CONFIG_BOOTSPLASH_FILE))
+bootsplash.jpg-type := bootsplash
 
 #######################################################################
 # i386 specific tools
@@ -113,9 +130,9 @@ $(OPTION_TABLE_H): $(objutil)/options/build_opt_tbl $(top)/src/mainboard/$(MAINB
 	@printf "    OPTION     $(subst $(obj)/,,$(@))\n"
 	$(objutil)/options/build_opt_tbl --config $(top)/src/mainboard/$(MAINBOARDDIR)/cmos.layout --header $@
 
-$(obj)/option_table.c: $(objutil)/options/build_opt_tbl $(top)/src/mainboard/$(MAINBOARDDIR)/cmos.layout
+$(obj)/cmos_layout.bin: $(objutil)/options/build_opt_tbl $(top)/src/mainboard/$(MAINBOARDDIR)/cmos.layout
 	@printf "    OPTION     $(subst $(obj)/,,$(@))\n"
-	$(objutil)/options/build_opt_tbl --config $(top)/src/mainboard/$(MAINBOARDDIR)/cmos.layout --option $@
+	$(objutil)/options/build_opt_tbl --config $(top)/src/mainboard/$(MAINBOARDDIR)/cmos.layout --binary $@
 
 $(objutil)/options/build_opt_tbl: $(top)/util/options/build_opt_tbl.c $(top)/src/include/pc80/mc146818rtc.h $(top)/src/include/boot/coreboot_tables.h
 	@printf "    HOSTCC     $(subst $(obj)/,,$(@))\n"
@@ -162,7 +179,7 @@ endif
 
 crt0s = $(src)/arch/x86/init/prologue.inc
 ldscripts =
-ldscripts += $(src)/arch/x86/init/ldscript_fallback_cbfs.lb
+ldscripts += $(src)/arch/x86/init/bootblock.ld
 ifeq ($(CONFIG_BIG_BOOTBLOCK),y)
 crt0s += $(src)/cpu/x86/16bit/entry16.inc
 ldscripts += $(src)/cpu/x86/16bit/entry16.lds
@@ -222,9 +239,9 @@ else
 
 $(obj)/mainboard/$(MAINBOARDDIR)/ap_romstage.o: $(src)/mainboard/$(MAINBOARDDIR)/ap_romstage.c $(OPTION_TABLE_H)
 	@printf "    CC         $(subst $(obj)/,,$(@))\n"
-	$(CC) -MMD $(CFLAGS) -I$(src) -I. -I$(obj) -c $(src)/mainboard/$(MAINBOARDDIR)/ap_romstage.c -o $@
+	$(CC) -MMD $(CFLAGS) -I$(src) -D__PRE_RAM__ -I. -I$(obj) -c $< -o $@
 
-$(obj)/mainboard/$(MAINBOARDDIR)/romstage.pre.inc: $(src)/mainboard/$(MAINBOARDDIR)/romstage.c $(OPTION_TABLE_H) $(obj)/build.h
+$(obj)/mainboard/$(MAINBOARDDIR)/romstage.pre.inc: $(src)/mainboard/$(MAINBOARDDIR)/romstage.c $(OPTION_TABLE_H) $(obj)/build.h $(obj)/config.h
 	@printf "    CC         romstage.inc\n"
 	$(CC) -MMD $(CFLAGS) -D__PRE_RAM__ -I$(src) -I. -I$(obj) -c -S $< -o $@
 
@@ -272,3 +289,19 @@ include $(src)/arch/x86/Makefile.bootblock.inc
 else
 include $(src)/arch/x86/Makefile.bigbootblock.inc
 endif
+
+seabios:
+	$(MAKE) -C payloads/external/SeaBIOS -f Makefile.inc \
+			HOSTCC="$(HOSTCC)" \
+			CC="$(CC)" LD="$(LD)" OBJDUMP="$(OBJDUMP)" \
+			OBJCOPY="$(OBJCOPY)" STRIP="$(STRIP)" \
+			CONFIG_SEABIOS_MASTER=$(CONFIG_SEABIOS_MASTER) \
+			CONFIG_SEABIOS_STABLE=$(CONFIG_SEABIOS_STABLE)
+filo:
+	$(MAKE) -C payloads/external/FILO -f Makefile.inc \
+			HOSTCC="$(HOSTCC)" \
+			CC="$(CC)" LD="$(LD)" OBJDUMP="$(OBJDUMP)" \
+			OBJCOPY="$(OBJCOPY)" STRIP="$(STRIP)" \
+			CONFIG_FILO_MASTER=$(CONFIG_FILO_MASTER) \
+			CONFIG_FILO_STABLE=$(CONFIG_FILO_STABLE)
+

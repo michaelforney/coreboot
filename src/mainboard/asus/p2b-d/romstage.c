@@ -28,7 +28,6 @@
 #include <console/console.h>
 #include "southbridge/intel/i82371eb/i82371eb.h"
 #include "northbridge/intel/i440bx/raminit.h"
-#include "lib/debug.c"
 #include "pc80/udelay_io.c"
 #include "lib/delay.c"
 #include "cpu/x86/bist.h"
@@ -45,7 +44,6 @@ int spd_read_byte(unsigned int device, unsigned int address)
 void main(unsigned long bist)
 {
 	w83977tf_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
-	uart_init();
 	console_init();
 	report_bist_failure(bist);
 

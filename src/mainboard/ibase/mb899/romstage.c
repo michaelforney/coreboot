@@ -237,13 +237,6 @@ void main(unsigned long bist)
 	early_superio_config_w83627ehg();
 
 	/* Set up the console */
-	uart_init();
-
-#if CONFIG_USBDEBUG
-	i82801gx_enable_usbdebug(1);
-	early_usbdebug_init();
-#endif
-
 	console_init();
 
 	/* Halt if there was a built in self test failure */
@@ -283,7 +276,7 @@ void main(unsigned long bist)
 	dump_spd_registers();
 #endif
 
-	sdram_initialize(boot_mode);
+	sdram_initialize(boot_mode, NULL);
 
 	/* Perform some initialization that must run before stage2 */
 	early_ich7_init();
@@ -339,7 +332,7 @@ void main(unsigned long bist)
 			memcpy(resume_backup_memory, (void *)CONFIG_RAMBASE, HIGH_MEMORY_SAVE);
 
 		/* Magic for S3 resume */
-		pci_write_config32(PCI_DEV(0, 0x00, 0), SKPAD, 0xcafed00d);
+		pci_write_config32(PCI_DEV(0, 0x00, 0), SKPAD, SKPAD_ACPI_S3_MAGIC);
 	}
 #endif
 }

@@ -62,7 +62,7 @@ typedef struct {
 typedef struct {
 	u8 bus;
 	u8 devfn;
-#ifdef CONFIG_PCI_OPTION_ROM_RUN_YABEL
+#if CONFIG_PCI_OPTION_ROM_RUN_YABEL
 	struct device* dev;
 #else
 	u64 puid;
@@ -84,7 +84,7 @@ typedef struct {
 } biosemu_device_t;
 
 typedef struct {
-#ifdef CONFIG_PCI_OPTION_ROM_RUN_YABEL
+#if CONFIG_PCI_OPTION_ROM_RUN_YABEL
 	unsigned long info;
 #else
 	u8 info;
@@ -101,14 +101,17 @@ typedef struct {
 // device. Needed for faster address translation, so
 // not every I/O or Memory Access needs to call translate_address_dev
 // and access the device tree
-// 6 BARs, 1 Exp. ROM, 1 Cfg.Space, and 3 Legacy
+// 6 BARs, 1 Exp. ROM, 1 Cfg.Space, and 3 Legacy, plus 2 "special"
 // translations are supported... this should be enough for
 // most devices... for VGA it is enough anyways...
-extern translate_address_t translate_address_array[11];
+extern translate_address_t translate_address_array[13];
 
 // index of last translate_address_array entry
 // set by get_dev_addr_info function
 extern u8 taa_last_entry;
+
+// add 1:1 mapped memory regions to translation table
+void biosemu_add_special_memory(u32 start, u32 size);
 
 /* the device we are working with... */
 extern biosemu_device_t bios_device;
@@ -117,7 +120,7 @@ u8 biosemu_dev_init(struct device * device);
 // NOTE: for dev_check_exprom to work, biosemu_dev_init MUST be called first!
 u8 biosemu_dev_check_exprom(unsigned long rom_base_addr);
 
-u8 biosemu_dev_translate_address(unsigned long * addr);
+u8 biosemu_dev_translate_address(int type, unsigned long * addr);
 
 /* endianness swap functions for 16 and 32 bit words
  * copied from axon_pciconfig.c

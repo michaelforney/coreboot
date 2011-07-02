@@ -7,10 +7,6 @@
 #include <device/pci_ids.h>
 #include <device/hypertransport_def.h>
 
-#ifndef CONFIG_K8_HT_FREQ_1G_SUPPORT
-	#define CONFIG_K8_HT_FREQ_1G_SUPPORT 0
-#endif
-
 // Do we need allocate MMIO? Current We direct last 64M to sblink only, We can not lose access to last 4M range to ROM
 #ifndef K8_ALLOCATE_MMIO_RANGE
 	#define K8_ALLOCATE_MMIO_RANGE 0
@@ -152,8 +148,11 @@ static uint16_t ht_read_freq_cap(device_t dev, uint8_t pos)
 	}
 
 	printk(BIOS_SPEW, "pos=0x%x, filtered freq_cap=0x%x\n", pos, freq_cap);
-	//printk(BIOS_SPEW, "capping to 800/600/400/200 MHz\n");
-	//freq_cap &= 0x3f;
+
+	#if CONFIG_SOUTHBRIDGE_VIA_K8M890 == 1
+	freq_cap &= 0x3f;
+	printk(BIOS_INFO, "Limiting HT to 800/600/400/200 MHz until K8M890 HT1000 is fixed.\n");
+	#endif
 	return freq_cap;
 }
 
@@ -568,7 +567,7 @@ static int optimize_link_read_pointers_chain(uint8_t ht_c_num)
 	return reset_needed;
 }
 
-#if defined(CONFIG_SOUTHBRIDGE_NVIDIA_CK804) // || defined(CONFIG_SOUTHBRIDGE_NVIDIA_MCP55)
+#if CONFIG_SOUTHBRIDGE_NVIDIA_CK804 // || CONFIG_SOUTHBRIDGE_NVIDIA_MCP55
 static int set_ht_link_buffer_count(uint8_t node, uint8_t linkn, uint8_t linkt, unsigned val)
 {
 	uint32_t dword;

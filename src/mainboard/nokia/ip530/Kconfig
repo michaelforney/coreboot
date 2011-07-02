@@ -27,10 +27,11 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 	select SUPERIO_SMSC_SMSCSUPERIO
 	select SOUTHBRIDGE_TI_PCI1X2X
 	select DRIVERS_DEC_21143
-	select BOARD_ROMSIZE_KB_256
+	select BOARD_ROMSIZE_KB_512
 	select PIRQ_ROUTE
 	select HAVE_PIRQ_TABLE
 	select UDELAY_TSC
+	select SDRAMPWR_4DIMM
 
 config MAINBOARD_DIR
 	string
@@ -43,43 +44,5 @@ config MAINBOARD_PART_NUMBER
 config IRQ_SLOT_COUNT
 	int
 	default 22
-
-## Configuration items for the ethernet adaptors
-config DEC21143_CACHE_LINE_SIZE
-	hex
-	default 0x00000000
-
-config DEC21143_EXPANSION_ROM_BASE_ADDRESS
-	hex
-	default 0x00000000
-
-config DEC21143_COMMAND_AND_STATUS_CONFIGURATION
-	hex
-	default 0x02800107
-
-## Configuration for the PCMCIA-Cardbus controller.
-config TI_PCMCIA_CARDBUS_CMDR
-	hex
-	default 0x0107
-
-config TI_PCMCIA_CARDBUS_CLSR
-	hex
-	default 0x00
-
-config TI_PCMCIA_CARDBUS_CLTR
-	hex
-	default 0x40
-
-config TI_PCMCIA_CARDBUS_BCR
-	hex
-	default 0x07C0
-
-config TI_PCMCIA_CARDBUS_SCR
-	hex
-	default 0x08449060
-
-config TI_PCMCIA_CARDBUS_MRR
-	hex
-	default 0x00007522
 
 endif # BOARD_NOKIA_IP530

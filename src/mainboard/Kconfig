@@ -4,8 +4,12 @@ choice
 	prompt "Mainboard vendor"
 	default VENDOR_EMULATION
 
+config VENDOR_AAEON
+	bool "Aaeon"
 config VENDOR_ABIT
 	bool "Abit"
+config VENDOR_ADVANSUS
+        bool "Advansus"
 config VENDOR_ADVANTECH
 	bool "Advantech"
 config VENDOR_AMD
@@ -68,6 +72,8 @@ config VENDOR_KONTRON
 	bool "Kontron"
 config VENDOR_LANNER
 	bool "Lanner"
+config VENDOR_LENOVO
+	bool "Lenovo"
 config VENDOR_LIPPERT
 	bool "Lippert"
 config VENDOR_MITAC
@@ -90,6 +96,8 @@ config VENDOR_RCA
 	bool "RCA"
 config VENDOR_RODA
 	bool "Roda"
+config VENDOR_SIEMENS
+	bool "Siemens"
 config VENDOR_SOYO
 	bool "Soyo"
 config VENDOR_SUNW
@@ -118,7 +126,9 @@ config VENDOR_WYSE
 endchoice
 
 source "src/mainboard/a-trend/Kconfig"
+source "src/mainboard/aaeon/Kconfig"
 source "src/mainboard/abit/Kconfig"
+source "src/mainboard/advansus/Kconfig"
 source "src/mainboard/advantech/Kconfig"
 source "src/mainboard/amd/Kconfig"
 source "src/mainboard/arima/Kconfig"
@@ -149,6 +159,7 @@ source "src/mainboard/iwill/Kconfig"
 source "src/mainboard/jetway/Kconfig"
 source "src/mainboard/kontron/Kconfig"
 source "src/mainboard/lanner/Kconfig"
+source "src/mainboard/lenovo/Kconfig"
 source "src/mainboard/lippert/Kconfig"
 source "src/mainboard/mitac/Kconfig"
 source "src/mainboard/msi/Kconfig"
@@ -160,6 +171,7 @@ source "src/mainboard/opus/Kconfig"
 source "src/mainboard/pcengines/Kconfig"
 source "src/mainboard/rca/Kconfig"
 source "src/mainboard/roda/Kconfig"
+source "src/mainboard/siemens/Kconfig"
 source "src/mainboard/soyo/Kconfig"
 source "src/mainboard/sunw/Kconfig"
 source "src/mainboard/supermicro/Kconfig"
@@ -185,6 +197,10 @@ config BOARD_ROMSIZE_KB_2048
 	bool
 config BOARD_ROMSIZE_KB_4096
 	bool
+config BOARD_ROMSIZE_KB_8192
+	bool
+config BOARD_ROMSIZE_KB_16384
+	bool
 
 # TODO: No help text possible for choice fields?
 choice
@@ -195,6 +211,8 @@ choice
 	default COREBOOT_ROMSIZE_KB_1024 if BOARD_ROMSIZE_KB_1024
 	default COREBOOT_ROMSIZE_KB_2048 if BOARD_ROMSIZE_KB_2048
 	default COREBOOT_ROMSIZE_KB_4096 if BOARD_ROMSIZE_KB_4096
+	default COREBOOT_ROMSIZE_KB_8192 if BOARD_ROMSIZE_KB_8192
+	default COREBOOT_ROMSIZE_KB_16384 if BOARD_ROMSIZE_KB_16384
 	help
 	  Select the size of the ROM chip you intend to flash coreboot on.
 
@@ -231,6 +249,16 @@ config COREBOOT_ROMSIZE_KB_4096
 	help
 	  Choose this option if you have a 4096 KB (4 MB) ROM chip.
 
+config COREBOOT_ROMSIZE_KB_8192
+	bool "8192 KB (8 MB)"
+	help
+	  Choose this option if you have a 8192 KB (8 MB) ROM chip.
+
+config COREBOOT_ROMSIZE_KB_16384
+	bool "16384 KB (16 MB)"
+	help
+	  Choose this option if you have a 16384 KB (16 MB) ROM chip.
+
 endchoice
 
 # Map the config names to an integer (KB).
@@ -242,6 +270,8 @@ config COREBOOT_ROMSIZE_KB
 	default 1024 if COREBOOT_ROMSIZE_KB_1024
 	default 2048 if COREBOOT_ROMSIZE_KB_2048
 	default 4096 if COREBOOT_ROMSIZE_KB_4096
+	default 8192 if COREBOOT_ROMSIZE_KB_8192
+	default 16384 if COREBOOT_ROMSIZE_KB_16384
 
 # Map the config names to a hex value (bytes).
 config ROM_SIZE
@@ -252,6 +282,8 @@ config ROM_SIZE
 	default 0x100000 if COREBOOT_ROMSIZE_KB_1024
 	default 0x200000 if COREBOOT_ROMSIZE_KB_2048
 	default 0x400000 if COREBOOT_ROMSIZE_KB_4096
+	default 0x800000 if COREBOOT_ROMSIZE_KB_8192
+	default 0x1000000 if COREBOOT_ROMSIZE_KB_16384
 
 config ENABLE_POWER_BUTTON
 	bool "Enable the power button" if POWER_BUTTON_IS_OPTIONAL

@@ -116,7 +116,7 @@ void lpc47n227_pnp_enable_resources(device_t dev)
 void lpc47n227_pnp_enable(device_t dev)
 {
 	pnp_enter_conf_state(dev);
-	lpc47n227_pnp_set_enable(dev, (dev->enabled) ? 1 : 0);
+	lpc47n227_pnp_set_enable(dev, !!dev->enabled);
 	pnp_exit_conf_state(dev);
 }
 
@@ -131,20 +131,11 @@ void lpc47n227_pnp_enable(device_t dev)
 static void lpc47n227_init(device_t dev)
 {
 	struct superio_smsc_lpc47n227_config *conf = dev->chip_info;
-	struct resource *res0;
 
 	if (!dev->enabled)
 		return;
 
 	switch (dev->path.pnp.device) {
-	case LPC47N227_SP1:
-		res0 = find_resource(dev, PNP_IDX_IO0);
-		init_uart8250(res0->base, &conf->com1);
-		break;
-	case LPC47N227_SP2:
-		res0 = find_resource(dev, PNP_IDX_IO0);
-		init_uart8250(res0->base, &conf->com2);
-		break;
 	case LPC47N227_KBDC:
 		printk(BIOS_DEBUG, "LPC47N227: Initializing keyboard.\n");
 		pc_keyboard_init(&conf->keyboard);

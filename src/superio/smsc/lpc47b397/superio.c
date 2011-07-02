@@ -68,20 +68,11 @@ static void enable_hwm_smbus(device_t dev)
 static void lpc47b397_init(device_t dev)
 {
 	struct superio_smsc_lpc47b397_config *conf = dev->chip_info;
-	struct resource *res0;
 
 	if (!dev->enabled)
 		return;
 
 	switch(dev->path.pnp.device) {
-	case LPC47B397_SP1:
-		res0 = find_resource(dev, PNP_IDX_IO0);
-		init_uart8250(res0->base, &conf->com1);
-		break;
-	case LPC47B397_SP2:
-		res0 = find_resource(dev, PNP_IDX_IO0);
-		init_uart8250(res0->base, &conf->com2);
-		break;
 	case LPC47B397_KBC:
 		pc_keyboard_init(&conf->keyboard);
 		break;
@@ -116,7 +107,7 @@ static void lpc47b397_pnp_enable(device_t dev)
 {
 	pnp_enter_conf_state(dev);
 	pnp_set_logical_device(dev);
-	pnp_set_enable(dev, (dev->enabled) ? 1 : 0);
+	pnp_set_enable(dev, !!dev->enabled);
 	pnp_exit_conf_state(dev);
 }
 

@@ -25,7 +25,6 @@
 #include "option_table.h"
 #endif
 
-
 /* Should support 8250, 16450, 16550, 16550A type UARTs */
 
 static inline int uart8250_can_tx_byte(unsigned base_port)
@@ -86,35 +85,29 @@ void uart8250_init(unsigned base_port, unsigned divisor)
 	outb(CONFIG_TTYS0_LCS, base_port + UART_LCR);
 }
 
-#ifndef __ROMCC__
-/* Initialize a generic uart */
-void init_uart8250(unsigned base_port, struct uart8250 *uart)
-{
-	int divisor = uart->baud ? (115200/uart->baud) : 1;
-
-	if (base_port == CONFIG_TTYS0_BASE) {
-		/* Don't reinitialize the console serial port,
-		 * This is espeically nasty in SMP.
-		 * NOTE: The first invocation thus always needs to be 
-		 */
-		return;
-	}
-	uart8250_init(base_port, divisor);
-}
-#endif
-
 void uart_init(void)
 {
-#if CONFIG_USE_OPTION_TABLE
-        static const unsigned char divisor[] = { 1, 2, 3, 6, 12, 24, 48, 96 };
-        unsigned ttys0_div, ttys0_index;
-        ttys0_index = read_option(CMOS_VSTART_baud_rate, CMOS_VLEN_baud_rate, 0);
-        ttys0_index &= 7;
-        ttys0_div = divisor[ttys0_index];
+	/* TODO the divisor calculation is hard coded to standard UARTs. Some
+	 * UARTs won't work with these values. This should be a property of the
+	 * UART used, worst case a Kconfig variable. For now live with hard
+	 * codes as the only devices that might be different are the iWave
+	 * iRainbowG6 and the OXPCIe952 card (and the latter is memory mapped)
+	 */
+	unsigned int div = (115200 / CONFIG_TTYS0_BAUD);
 
-	uart8250_init(CONFIG_TTYS0_BASE, ttys0_div);
+#if !defined(__SMM__) && CONFIG_USE_OPTION_TABLE
+	static const unsigned char divisor[8] = { 1, 2, 3, 6, 12, 24, 48, 96 };
+	unsigned b_index = 0;
+#if defined(__PRE_RAM__)
+	b_index = read_option(baud_rate, 0);
+	b_index &= 7;
+	div = divisor[b_index];
 #else
-	uart8250_init(CONFIG_TTYS0_BASE, CONFIG_TTYS0_DIV);
+	if (get_option(&b_index, "baud_rate") == 0) {
+		div = divisor[b_index];
+	}
 #endif
-}
+#endif
 
+	uart8250_init(CONFIG_TTYS0_BASE, div);
+}

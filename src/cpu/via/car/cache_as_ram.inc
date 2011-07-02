@@ -25,18 +25,22 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <cpu/x86/car.h>
 #include <cpu/x86/stack.h>
 #include <cpu/x86/mtrr.h>
+#include <console/post_codes.h>
 
 #define CacheSize		CONFIG_DCACHE_RAM_SIZE
 #define CacheBase		CONFIG_DCACHE_RAM_BASE
 
-	save_bist_result()
+	/* Save the BIST result. */
+	movl	%eax, %ebp
 
 CacheAsRam:
 
-	disable_cache()
+	/* Disable cache. */
+	movl	%cr0, %eax
+	orl	$(1 << 30), %eax
+	movl	%eax, %cr0
 	invd
 
 	/* Set the default memory type and enable fixed and variable MTRRs. */
@@ -103,10 +107,10 @@ clear_fixed_var_mtrr_out:
 	movl	$MTRRphysMask_MSR(0), %ecx
 	/* This assumes we never access addresses above 2^36 in CAR. */
 	movl	$0x0000000f, %edx
-	movl	$(~(CacheSize - 1) | 0x800), %eax
+	movl	$(~(CacheSize - 1) | MTRRphysMaskValid), %eax
 	wrmsr
 
-#if defined(CONFIG_TINY_BOOTBLOCK) && CONFIG_TINY_BOOTBLOCK
+#if CONFIG_TINY_BOOTBLOCK
 #define REAL_XIP_ROM_BASE AUTO_XIP_ROM_BASE
 #else
 #define REAL_XIP_ROM_BASE CONFIG_XIP_ROM_BASE
@@ -129,7 +133,7 @@ clear_fixed_var_mtrr_out:
 
 	movl	$MTRRphysMask_MSR(1), %ecx
 	movl	$0x0000000f, %edx
-	movl	$(~(CONFIG_XIP_ROM_SIZE - 1) | 0x800), %eax
+	movl	$(~(CONFIG_XIP_ROM_SIZE - 1) | MTRRphysMaskValid), %eax
 	wrmsr
 
 	/* Set the default memory type and enable fixed and variable MTRRs. */
@@ -139,7 +143,10 @@ clear_fixed_var_mtrr_out:
 	movl	$(MTRRdefTypeEn), %eax
 	wrmsr
 
-	enable_cache()
+	/* Enable cache. */
+	movl	%cr0, %eax
+	andl	$(~((1 << 30) | (1 << 29))), %eax
+	movl	%eax, %cr0
 
 	/* Read the range with lodsl. */
 	cld
@@ -195,7 +202,8 @@ testok:
 	jne	stackerr
 #endif
 
-	restore_bist_result()
+	/* Restore the BIST result. */
+	movl	%ebp, %eax
 
 	/* We need to set EBP? No need. */
 	movl	%esp, %ebp
@@ -210,7 +218,10 @@ testok:
 
 	/* We don't need CAR from now on. */
 
-	disable_cache()
+	/* Disable cache. */
+	movl	%cr0, %eax
+	orl	$(1 << 30), %eax
+	movl	%eax, %cr0
 
 	/* Set the default memory type and enable variable MTRRs. */
 	/* TODO: Or also enable fixed MTRRs? Bug in the code? */
@@ -219,63 +230,39 @@ testok:
 	movl	$(MTRRdefTypeEn), %eax
 	wrmsr
 
-	/* Enable caching for first 1M using variable MTRR. */
+	/* Enable caching for CONFIG_RAMBASE..CONFIG_RAMTOP. */
 	movl	$MTRRphysBase_MSR(0), %ecx
 	xorl	%edx, %edx
-	movl	$(0 | MTRR_TYPE_WRBACK), %eax
+	movl	$(CONFIG_RAMBASE | MTRR_TYPE_WRBACK), %eax
 	wrmsr
-
-	/*
-	 * Enable cache for 0-7ffff, 80000-9ffff, e0000-fffff;
-	 * If 1M cacheable, then when S3 resume, there is stange color on
-	 * screen for 2 sec. Suppose problem of a0000-dfffff and cache.
-	 * And in x86_setup_fixed_mtrrs()(mtrr.c), 0-256M is set cacheable.
-	 */
 
 	movl	$MTRRphysMask_MSR(0), %ecx
 	movl	$0x0000000f, %edx	/* AMD 40 bit 0xff */
-	movl	$((~((0 + 0x80000) - 1)) | 0x800), %eax
-	wrmsr
-
-	movl	$MTRRphysBase_MSR(1), %ecx
-	xorl	%edx, %edx
-	movl	$(0x80000 | MTRR_TYPE_WRBACK), %eax
-	wrmsr
-
-	movl	$MTRRphysMask_MSR(1), %ecx
-	movl	$0x0000000f, %edx	/* AMD 40 bit 0xff */
-	movl	$((~((0 + 0x20000) - 1)) | 0x800), %eax
-	wrmsr
-
-	movl	$MTRRphysBase_MSR(2), %ecx
-	xorl	%edx, %edx
-	movl	$(0xc0000 | MTRR_TYPE_WRBACK), %eax
-	wrmsr
-
-	movl	$MTRRphysMask_MSR(2), %ecx
-	movl	$0x0000000f, %edx	/* AMD 40 bit 0xff */
-	movl	$((~(( 0 + 0x40000) - 1)) | 0x800), %eax
+	movl	$(~(CONFIG_RAMTOP - CONFIG_RAMBASE - 1) | MTRRphysMaskValid), %eax
 	wrmsr
 
 	/* Cache XIP_ROM_BASE-SIZE to speedup coreboot code. */
-	movl	$MTRRphysBase_MSR(3), %ecx
+	movl	$MTRRphysBase_MSR(1), %ecx
 	xorl	%edx, %edx
 	movl	$REAL_XIP_ROM_BASE, %eax
 	orl	$MTRR_TYPE_WRBACK, %eax
 	wrmsr
 
-	movl	$MTRRphysMask_MSR(3), %ecx
+	movl	$MTRRphysMask_MSR(1), %ecx
 	xorl	%edx, %edx
-	movl	$(~(CONFIG_XIP_ROM_SIZE - 1) | 0x800), %eax
+	movl	$(~(CONFIG_XIP_ROM_SIZE - 1) | MTRRphysMaskValid), %eax
 	wrmsr
 
-	enable_cache()
+	/* Enable cache. */
+	movl	%cr0, %eax
+	andl	$(~((1 << 30) | (1 << 29))), %eax
+	movl	%eax, %cr0
 	invd
 
 	/* Clear boot_complete flag. */
 	xorl	%ebp, %ebp
 __main:
-	post_code(0x11)
+	post_code(POST_PREPARE_RAMSTAGE)
 	cld			/* Clear direction flag. */
 
 	movl	%ebp, %esi
@@ -286,7 +273,7 @@ __main:
 	call	copy_and_run
 
 .Lhlt:
-	post_code(0xee)
+	post_code(POST_DEAD_CODE)
 	hlt
 	jmp	.Lhlt
 

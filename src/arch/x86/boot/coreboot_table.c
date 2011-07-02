@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #if (CONFIG_USE_OPTION_TABLE == 1)
 #include <option_table.h>
+#include <cbfs.h>
 #endif
 
 static struct lb_header *lb_table_init(unsigned long addr)
@@ -115,7 +116,7 @@ static struct lb_serial *lb_serial(struct lb_header *header)
 	serial->baud = CONFIG_TTYS0_BAUD;
 	return serial;
 #else
-	return header;
+	return NULL;
 #endif
 }
 
@@ -134,6 +135,9 @@ static void lb_console(struct lb_header *header)
 #if CONFIG_CONSOLE_SERIAL8250
 	add_console(header, LB_TAG_CONSOLE_SERIAL8250);
 #endif
+#if CONFIG_CONSOLE_SERIAL8250MEM
+	add_console(header, LB_TAG_CONSOLE_SERIAL8250MEM);
+#endif
 #if CONFIG_CONSOLE_LOGBUF
 	add_console(header, LB_TAG_CONSOLE_LOGBUF);
 #endif
@@ -144,7 +148,7 @@ static void lb_console(struct lb_header *header)
 
 static void lb_framebuffer(struct lb_header *header)
 {
-#if defined(CONFIG_BOOTSPLASH) && CONFIG_BOOTSPLASH && CONFIG_COREBOOT_KEEP_FRAMEBUFFER
+#if CONFIG_BOOTSPLASH && CONFIG_COREBOOT_KEEP_FRAMEBUFFER
 	void fill_lb_framebuffer(struct lb_framebuffer *framebuffer);
 
 	struct lb_framebuffer *framebuffer;
@@ -542,11 +546,16 @@ unsigned long write_coreboot_table(
 
 #if (CONFIG_USE_OPTION_TABLE == 1)
 	{
-		struct lb_record *rec_dest = lb_new_record(head);
-		/* Copy the option config table, it's already a lb_record... */
-		memcpy(rec_dest,  &option_table, option_table.size);
-		/* Create cmos checksum entry in coreboot table */
-		lb_cmos_checksum(head);
+		struct cmos_option_table *option_table = cbfs_find_file("cmos_layout.bin", 0x1aa);
+		if (option_table) {
+			struct lb_record *rec_dest = lb_new_record(head);
+			/* Copy the option config table, it's already a lb_record... */
+			memcpy(rec_dest,  option_table, option_table->size);
+			/* Create cmos checksum entry in coreboot table */
+			lb_cmos_checksum(head);
+		} else {
+			printk(BIOS_ERR, "cmos_layout.bin could not be found!\n");
+		}
 	}
 #endif
 	/* Record where RAM is located */

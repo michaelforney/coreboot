@@ -1,0 +1,2 @@
+source src/ec/acpi/Kconfig
+source src/ec/lenovo/Kconfig

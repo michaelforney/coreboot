@@ -78,7 +78,7 @@ static void sio_init(void)
 	pnp_enter_ext_func_mode(GPIO2345_DEV);
 	pnp_set_logical_device(GPIO2345_DEV);
 
-	/* Pin 119 ~ 120 GP21, GP20  */
+	/* Pin 119 ~ 120 is GP21, GP20  */
 	reg = pnp_read_config(GPIO2345_DEV, 0x29);
 	pnp_write_config(GPIO2345_DEV, 0x29, (reg | 2));
 
@@ -90,28 +90,39 @@ static void sio_init(void)
 	pnp_write_config(GPIO2345_DEV, 0x2c, 0x1);
 	pnp_write_config(GPIO2345_DEV, 0x2d, 0x1);
 
-//idx 30 e0 e1 e2 e3 e4 e5 e6  e7 e8 e9 f0 f1 f2 f3 f4  f5 f6 f7 fe
-//val 07 XX XX XX f6 0e 00 00  00 00 ff d6 96 00 40 d0  83 00 00 07
-
-//GPO20 - 1 = 1.82 0 = 1.92 sideport voltage
-//mGPUV GPO40 | GPO41 | GPIO23 - 000 - 1.45V step 0.05 -- 111 - 1.10V
-//DDR voltage 44 45 46
-
-	/* GPO20 - sideport voltage GPO23 - mgpuV */
+	/* GPO20 - sideport voltage 1 = 1.82 0 = 1.92
+	   GPI21 - unknown input (NC?)
+	   GPI22 - unknown input (NC?)
+	   GPO23 - mgpuV bit0
+	   GP24-27 - PS/2 mouse/keyb (only keyb is connected use flip interface for mouse)
+	*/
 	pnp_write_config(GPIO2345_DEV, 0x30, 0x07);	/* Enable GPIO 2,3,4. */
 	pnp_write_config(GPIO2345_DEV, 0xe3, 0xf6);	/* dir of GPIO2 11110110*/
 	pnp_write_config(GPIO2345_DEV, 0xe4, 0x0e);	/* data */
 	pnp_write_config(GPIO2345_DEV, 0xe5, 0x00);	/* No inversion */
 
-	/* GPO30 GPO33 GPO35 */
-	//GPO35 - loadline control 0 - enabled
-	//GPIO30 - unknown
-	//GPIO33 - unknown
+	/* GPIO30 - unknown output, set to 0 
+	   GPI31 - unknown input NC?
+	   GPI32 - unknown input NC?
+	   GPIO33 - unknown output, set to 0.
+	   GPI34 - unknown input NC?
+	   GPO35 - loadline control 1 = enabled (2 phase clock) 0 = disabled 4 phase clock
+	   GPIO36 - input = HT voltage 1.30V output (low) = HT voltage 1.35V
+	   GP37 - unknown input NC? */
+
 	pnp_write_config(GPIO2345_DEV, 0xf0, 0xd6);	/* dir of GPIO3 11010110*/
 	pnp_write_config(GPIO2345_DEV, 0xf1, 0x96);	/* data */
 	pnp_write_config(GPIO2345_DEV, 0xf2, 0x00);	/* No inversion */
 
-	/* GPO40 GPO41 GPO42 GPO43 PO45 */
+	/* GPO40 - mgpuV bit2
+	   GPO41 - mgpuV bit1
+	   GPO42  - IRTX
+	   GPO43  - IRRX
+	   GPIO44 - memory voltage bit2 (input/outputlow)
+	   GPIO45 - memory voltage bit1 (2.60 (000) - 2.95 (111))
+	   GPIO46 - memory voltage bit0
+	   GPIO47 - unknown input? */
+
 	pnp_write_config(GPIO2345_DEV, 0xf4, 0xd0);	/* dir of GPIO4 11010000 */
 	pnp_write_config(GPIO2345_DEV, 0xf5, 0x83);	/* data */
 	pnp_write_config(GPIO2345_DEV, 0xf6, 0x00);	/* No inversion */
@@ -135,24 +146,18 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 		/* Nothing special needs to be done to find bus 0 */
 		/* Allow the HT devices to be found */
 		enumerate_ht_chain();
-		/* sb700_lpc_port80(); */
-		sb700_pci_port80();
+		/* sb7xx_51xx_lpc_port80(); */
+		sb7xx_51xx_pci_port80();
 	}
 
 	if (bist == 0)
 		bsp_apicid = init_cpus(cpu_init_detectedx, sysinfo);
 
 	enable_rs780_dev8();
-	sb700_lpc_init();
+	sb7xx_51xx_lpc_init();
 
 	sio_init();
 	w83627dhg_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
-	uart_init();
-
-#if CONFIG_USBDEBUG
-	sb700_enable_usbdebug(CONFIG_USBDEBUG_DEFAULT_PORT);
-	early_usbdebug_init();
-#endif
 
 	console_init();
 
@@ -175,7 +180,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 
 	/* run _early_setup before soft-reset. */
 	rs780_early_setup();
-	sb700_early_setup();
+	sb7xx_51xx_early_setup();
 
 	/* Check to see if processor is capable of changing FIDVID  */
 	/* otherwise it will throw a GP# when reading FIDVID_STATUS */
@@ -215,7 +220,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	sdram_initialize(sysinfo->nodes, sysinfo->ctrl, sysinfo);
 
 	rs780_before_pci_init();
-	sb700_before_pci_init();
+	sb7xx_51xx_before_pci_init();
 
 	post_cache_as_ram();
 }

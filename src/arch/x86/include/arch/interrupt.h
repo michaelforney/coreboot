@@ -22,4 +22,8 @@
 #include "registers.h"
 
 /* setup interrupt handlers for mainboard */
+#if CONFIG_PCI_OPTION_ROM_RUN_REALMODE
 extern void mainboard_interrupt_handlers(int intXX, void *intXX_func);
+#else
+static inline void mainboard_interrupt_handlers(int intXX, void *intXX_func) { }
+#endif

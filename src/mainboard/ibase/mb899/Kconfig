@@ -3,7 +3,6 @@ if BOARD_IBASE_MB899
 config BOARD_SPECIFIC_OPTIONS # dummy
 	def_bool y
 	select ARCH_X86
-	select CPU_INTEL_CORE
 	select CPU_INTEL_SOCKET_MFCPGA478
 	select NORTHBRIDGE_INTEL_I945GM
 	select SOUTHBRIDGE_INTEL_I82801GX
@@ -53,7 +52,7 @@ config MAX_PHYSICAL_CPUS
 	int
 	default 2
 
-config FALLBACK_VGA_BIOS_FILE
+config VGA_BIOS_FILE
 	string
 	default "amipci_01.20"
 

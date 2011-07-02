@@ -10,6 +10,7 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 	select SOUTHBRIDGE_TI_PCI7420
 	select SUPERIO_SMSC_LPC47N227
 	select SUPERIO_RENESAS_M3885X
+	select EC_ACPI
 	select BOARD_HAS_FADT
 	select HAVE_OPTION_TABLE
 	select HAVE_PIRQ_TABLE
@@ -24,14 +25,6 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 config MAINBOARD_DIR
 	string
 	default roda/rk886ex
-
-config DCACHE_RAM_BASE
-	hex
-	default 0xffdf8000
-
-config DCACHE_RAM_SIZE
-	hex
-	default 0x8000
 
 config MAINBOARD_PART_NUMBER
 	string
@@ -52,10 +45,6 @@ config MAX_CPUS
 config MAX_PHYSICAL_CPUS
 	int
 	default 2
-
-config MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID
-	hex
-	default 0x6886
 
 config MAXIMUM_SUPPORTED_FREQUENCY
 	int

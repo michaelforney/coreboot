@@ -1,3 +1,5 @@
+menu "Architecture (x86)"
+
 # This is an SMP option. It relates to starting up APs.
 # It is usually set in mainboard/*/Kconfig.
 # TODO: Improve description.
@@ -6,19 +8,9 @@ config AP_IN_SIPI_WAIT
 	default n
 	depends on ARCH_X86
 
-# This is the name of the respective architecture subdirectory in arch/.
-config ARCH
-	string
-	default i386
-	depends on ARCH_X86
-
 config ROMBASE
 	hex
 	default 0xffff0000
-
-config ROM_IMAGE_SIZE
-	hex
-	default 0x10000
 
 config RAMBASE
 	hex
@@ -89,5 +81,22 @@ config PC80_SYSTEM
 config BOOTBLOCK_NORTHBRIDGE_INIT
 	string
 
+config HAVE_CMOS_DEFAULT
+	def_bool n
+
+config CMOS_DEFAULT_FILE
+	string
+	depends on HAVE_CMOS_DEFAULT
+
 config BOOTBLOCK_SOUTHBRIDGE_INIT
 	string
+
+config BIG_ENDIAN
+	bool
+	default n
+
+config LITTLE_ENDIAN
+	bool
+	default !BIG_ENDIAN
+
+endmenu

@@ -77,9 +77,13 @@ struct pci_access *pci_alloc(void)
 	return pacc;
 }
 
-void pci_init(struct pci_access* pacc)
+void pci_init(struct pci_access *pacc)
 {
 	memset(pacc, 0, sizeof(*pacc));
+}
+
+void pci_cleanup(__attribute__ ((unused)) struct pci_access *pacc)
+{
 }
 
 void pci_filter_init(struct pci_access* pacc, struct pci_filter* pf)
@@ -91,6 +95,8 @@ void pci_filter_init(struct pci_access* pacc, struct pci_filter* pf)
 	pf->vendor = -1;
 	pf->device = -1;
 }
+
+static char *invalid_pci_device_string = (char *)"invalid pci device string";
 
 /* parse domain:bus:dev.func (with all components but "dev" optional)
  * into filter.
@@ -105,7 +111,7 @@ char *pci_filter_parse_slot(struct pci_filter* filter, const char* id)
 	char *funcp = strrchr(id, '.');
 	if (funcp) {
 		filter->func = strtoul(funcp+1, &endptr, 0);
-		if (endptr[0] != '\0') return "invalid pci device string";
+		if (endptr[0] != '\0') return invalid_pci_device_string;
 	}
 
 	char *devp = strrchr(id, ':');
@@ -114,7 +120,7 @@ char *pci_filter_parse_slot(struct pci_filter* filter, const char* id)
 	} else {
 		filter->dev = strtoul(devp+1, &endptr, 0);
 	}
-	if (endptr != funcp) return "invalid pci device string";
+	if (endptr != funcp) return invalid_pci_device_string;
 	if (!devp) return NULL;
 
 	char *busp = strchr(id, ':');
@@ -123,11 +129,11 @@ char *pci_filter_parse_slot(struct pci_filter* filter, const char* id)
 	} else {
 		filter->bus = strtoul(busp+1, &endptr, 0);
 	}
-	if (endptr != funcp) return "invalid pci device string";
+	if (endptr != funcp) return invalid_pci_device_string;
 	if (busp == devp) return NULL;
 
 	filter->domain = strtoul(id, &endptr, 0);
-	if (endptr != busp) return "invalid pci device string";
+	if (endptr != busp) return invalid_pci_device_string;
 
 	return NULL;
 }

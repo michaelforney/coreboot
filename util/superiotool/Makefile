@@ -33,11 +33,12 @@ CFLAGS += -O2 -Wall -Werror -Wstrict-prototypes -Wundef -Wstrict-aliasing \
          -Werror-implicit-function-declaration -ansi -pedantic $(SVNDEF)
 LDFLAGS += -lz
 
-OBJS = superiotool.o ali.o fintek.o ite.o nsc.o nuvoton.o smsc.o winbond.o
+OBJS = superiotool.o serverengines.o ali.o fintek.o ite.o nsc.o nuvoton.o \
+       smsc.o winbond.o
 
 OS_ARCH = $(shell uname)
 ifeq ($(OS_ARCH), Darwin)
-LIBS = -framework IOKit -framework DirectIO -lpci -lz
+LIBS = -framework IOKit -framework DirectHW -lpci -lz
 endif
 ifeq ($(OS_ARCH), FreeBSD)
 CFLAGS = -O2 -Wall -Werror -Wstrict-prototypes -Wundef -Wstrict-aliasing \

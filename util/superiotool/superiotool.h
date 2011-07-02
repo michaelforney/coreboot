@@ -33,8 +33,8 @@
 #include <sys/io.h>
 #endif
 #if (defined(__MACH__) && defined(__APPLE__))
-/* DirectIO is available here: http://www.coresystems.de/en/directio */
-#include <DirectIO/darwinio.h>
+/* DirectHW is available here: http://www.coreboot.org/DirectHW */
+#include <DirectHW/DirectHW.h>
 #endif
 
 #ifdef PCI_SUPPORT
@@ -182,6 +182,10 @@ void print_vendor_chips(const char *vendor,
 void probe_idregs_ali(uint16_t port);
 void print_ali_chips(void);
 
+/* serverengines.c */
+void probe_idregs_serverengines(uint16_t port);
+void print_serverengines_chips(void);
+
 /* fintek.c */
 void probe_idregs_fintek(uint16_t port);
 void probe_idregs_fintek_alternative(uint16_t port);
@@ -223,15 +227,16 @@ static const struct {
 	{probe_idregs_fintek_alternative,	{0x2e, 0x4e, EOT}},
 	/* Only use 0x370 for ITE, but 0x3f0 or 0x3bd would also be valid. */
 	{probe_idregs_ite,	{0x25e, 0x2e, 0x4e, 0x370, EOT}},
-	{probe_idregs_nsc,	{0x2e, 0x4e, 0x15c, EOT}},
+	{probe_idregs_nsc,	{0x2e, 0x4e, 0x15c, 0x164e, EOT}},
 	/* I/O pairs on Nuvoton EC chips can be configured by firmware in
 	 * addition to the following hardware strapping options. */
-	{probe_idregs_nuvoton, {0x164e, 0x2e, EOT}},
+	{probe_idregs_nuvoton, {0x164e, 0x2e, 0x4e, EOT}},
 	{probe_idregs_smsc,	{0x2e, 0x4e, 0x162e, 0x164e, 0x3f0, 0x370, EOT}},
 	{probe_idregs_winbond,	{0x2e, 0x4e, 0x3f0, 0x370, 0x250, EOT}},
 #ifdef PCI_SUPPORT
 	{probe_idregs_via,	{0x3f0, EOT}},
 #endif
+	{probe_idregs_serverengines,	{0x2e, EOT}},
 };
 
 /** Table of functions to print out supported Super I/O chips. */
@@ -248,6 +253,7 @@ static const struct {
 #ifdef PCI_SUPPORT
 	{print_via_chips},
 #endif
+	{print_serverengines_chips},
 };
 
 #endif

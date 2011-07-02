@@ -29,7 +29,6 @@
 #include "cpu/x86/bist.h"
 #include "cpu/x86/msr.h"
 #include <cpu/amd/lxdef.h>
-#include <cpu/amd/geode_post_code.h>
 #include "southbridge/amd/cs5536/cs5536.h"
 #include "spd_table.h"
 #include <spd.h>
@@ -68,7 +67,6 @@ static int spd_read_byte(unsigned device, unsigned address)
 
 void main(unsigned long bist)
 {
-	post_code(0x01);
 
 	msr_t msr;
 	static const struct mem_controller memctrl[] = {
@@ -91,7 +89,6 @@ void main(unsigned long bist)
 	msr.lo |= 0x7 << 20;
 	wrmsr(MDD_LEG_IO, msr);
 
-	uart_init();
 	console_init();
 
 	/* Halt if there was a built in self test failure */

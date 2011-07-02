@@ -68,7 +68,6 @@ static inline int spd_read_byte(u16 device, u8 address)
 }
 
 #include "northbridge/intel/i3100/raminit.h"
-#include "cpu/x86/mtrr/earlymtrr.c"
 #include "northbridge/intel/i3100/memory_initialized.c"
 #include "northbridge/intel/i3100/raminit.c"
 #include "lib/generic_sdram.c"
@@ -146,7 +145,6 @@ void main(unsigned long bist)
 	i3100_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
 	i3100_configure_uart_clk(SERIAL_DEV, I3100_UART_CLK_PREDIVIDE_26);
 
-	uart_init();
 	console_init();
 
 	/* Halt if there was a built in self test failure */

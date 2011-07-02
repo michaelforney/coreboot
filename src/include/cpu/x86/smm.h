@@ -20,6 +20,11 @@
 /* AMD64 SMM State-Save Area
  * starts @ 0x7e00
  */
+
+#ifndef CPU_X86_SMM_H
+#define CPU_X86_SMM_H
+
+#include <types.h>
 typedef struct {
 	u16	es_selector;
 	u16	es_attributes;
@@ -248,6 +253,14 @@ typedef struct {
 	};
 } smm_state_save_area_t;
 
+#define APM_CNT		0xb2
+#define APM_CNT_CST_CONTROL	0x85
+#define APM_CNT_PST_CONTROL	0x80
+#define APM_CNT_ACPI_DISABLE	0x1e
+#define APM_CNT_ACPI_ENABLE	0xe1
+#define APM_CNT_MBI_UPDATE	0xeb
+#define APM_CNT_GNVS_UPDATE	0xea
+#define APM_STS		0xb3
 
 /* SMI handler function prototypes */
 void smi_handler(u32 smm_revision);
@@ -263,4 +276,7 @@ void __attribute__((weak)) northbridge_smi_handler(unsigned int node, smm_state_
 void __attribute__((weak)) southbridge_smi_handler(unsigned int node, smm_state_save_area_t *state_save);
 
 void __attribute__((weak)) mainboard_smi_gpi(u16 gpi_sts);
+int __attribute__((weak)) mainboard_apm_cnt(u8 data);
+void smi_release_lock(void);
 
+#endif

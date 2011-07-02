@@ -264,7 +264,10 @@ static void init_ecc_memory(unsigned node_id)
 
 	/* See if we scrubbing should be enabled */
 	enable_scrubbing = 1;
-	get_option(&enable_scrubbing, "hw_scrubber");
+	if( get_option(&enable_scrubbing, "hw_scrubber") < 0 ) 
+	{
+		enable_scrubbing = CONFIG_HW_SCRUBBER;
+	}
 
 	/* Enable cache scrubbing at the lowest possible rate */
 	if (enable_scrubbing) {
@@ -384,23 +387,6 @@ static inline void k8_errata(void)
 		wrmsr_amd(DC_CFG_MSR, msr);
 
 	}
-	/* I can't touch this msr on early buggy cpus */
-	if (!is_cpu_pre_b3()) {
-
-		/* Erratum 89 ... */
-		msr = rdmsr(NB_CFG_MSR);
-		msr.lo |= 1 << 3;
-
-		if (!is_cpu_pre_c0() && is_cpu_pre_d0()) {
-			/* D0 later don't need it */
-			/* Erratum 86 Disable data masking on C0 and
-			 * later processor revs.
-			 * FIXME this is only needed if ECC is enabled.
-			 */
-			msr.hi |= 1 << (36 - 32);
-		}
-		wrmsr(NB_CFG_MSR, msr);
-	}
 
 	/* Erratum 97 ... */
 	if (!is_cpu_pre_c0() && is_cpu_pre_d0()) {
@@ -428,35 +414,64 @@ static inline void k8_errata(void)
 	msr.hi |= 1 << (43 - 32);
 	wrmsr_amd(BU_CFG_MSR, msr);
 
+	/* Erratum 110 */
+	/* This erratum applies to D0 thru E6 revisions
+	 * Revision F and later are unaffected. There are two fixes
+	 * depending on processor revision.
+	 */
 	if (is_cpu_d0()) {
 		/* Erratum 110 ... */
 		msr = rdmsr_amd(CPU_ID_HYPER_EXT_FEATURES);
 		msr.hi |= 1;
 		wrmsr_amd(CPU_ID_HYPER_EXT_FEATURES, msr);
 	}
-#endif
 
-#if CONFIG_K8_REV_F_SUPPORT == 0
 	if (!is_cpu_pre_e0())
-#endif
 	{
 		/* Erratum 110 ... */
 		msr = rdmsr_amd(CPU_ID_EXT_FEATURES_MSR);
 		msr.hi |= 1;
 		wrmsr_amd(CPU_ID_EXT_FEATURES_MSR, msr);
 	}
+#endif
 
+
+#if CONFIG_K8_REV_F_SUPPORT == 0
+	/* I can't touch this msr on early buggy cpus */
+	if (!is_cpu_pre_b3())
+#endif
+	{
+		msr = rdmsr(NB_CFG_MSR);
+		
+#if CONFIG_K8_REV_F_SUPPORT == 0
+		if (!is_cpu_pre_c0() && is_cpu_pre_d0()) {
+			/* D0 later don't need it */
+			/* Erratum 86 Disable data masking on C0 and
+			 * later processor revs.
+			 * FIXME this is only needed if ECC is enabled.
+			 */
+			msr.hi |= 1 << (36 - 32);
+		}
+#endif
+		/* Erratum 89 ... */
+		/* Erratum 89 is mistakenly labeled as 88 in AMD pub #25759
+		 * It is correctly labeled as 89 on page 49 of the document
+		 * and in AMD pub#33610
+		 */
+		msr.lo |= 1 << 3;
+		/* Erratum 169 */
+		/* This supersedes erratum 131; 131 should not be applied with 169 
+		 * We also need to set some bits in the northbridge, handled in src/northbridge/amdk8/
+		 */
+		msr.hi |= 1;
+		
+		wrmsr(NB_CFG_MSR, msr);
+	}
 	/* Erratum 122 */
 	msr = rdmsr(HWCR_MSR);
 	msr.lo |= 1 << 6;
 	wrmsr(HWCR_MSR, msr);
 
-#if CONFIG_K8_REV_F_SUPPORT == 1
-	/* Erratum 131... */
-	msr = rdmsr(NB_CFG_MSR);
-	msr.lo |= 1 << 20;
-	wrmsr(NB_CFG_MSR, msr);
-#endif
 
 }
 

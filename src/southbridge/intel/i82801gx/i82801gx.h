@@ -38,7 +38,7 @@
 #ifndef __ACPI__
 #define DEBUG_PERIODIC_SMIS 0
 
-#if !defined(ASSEMBLY) && !defined(__ROMCC__)
+#if !defined(__ASSEMBLER__) && !defined(__ROMCC__)
 #if !defined(__PRE_RAM__)
 #include "chip.h"
 extern void i82801gx_enable(device_t dev);
@@ -46,7 +46,7 @@ extern void i82801gx_enable(device_t dev);
 void enable_smbus(void);
 int smbus_read_byte(unsigned device, unsigned address);
 #endif
-void i82801gx_enable_usbdebug(unsigned int port);
+void enable_usbdebug(unsigned int port);
 #endif
 
 #define MAINBOARD_POWER_OFF	0
@@ -365,5 +365,7 @@ void i82801gx_enable_usbdebug(unsigned int port);
 #define SS_CNT		0x50
 #define C3_RES		0x54
 
+#define SKPAD_ACPI_S3_MAGIC	0xcafed00d
+#define SKPAD_NORMAL_BOOT_MAGIC	0xcafebabe
 #endif /* __ACPI__ */
 #endif				/* SOUTHBRIDGE_INTEL_I82801GX_I82801GX_H */

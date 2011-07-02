@@ -5,6 +5,7 @@ chip northbridge/amd/amdk8/root_complex
 		end
 	end
 	device pci_domain 0 on
+		subsystemid 0x161f 0x3016 inherit
 		chip northbridge/amd/amdk8
 			device pci 18.0 on # LDT 0
 				chip southbridge/amd/amd8131
@@ -55,9 +56,6 @@ chip northbridge/amd/amdk8/root_complex
 							device pnp  2e.b on      # HW Monitor
 								 io 0x60 = 0x290
 							end
-							register "com1" = "{1}"
-						#	register "com1" = "{1, 0, 0x3f8, 4}"
-						#	register "lpt" = "{1}"
 						end
 					end
 					device pci 1.1 on end

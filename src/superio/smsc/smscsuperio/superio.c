@@ -59,6 +59,7 @@
 #define A8000		0x77	/* ASUS A8000, a rebranded DME1737(?) */
 #define DME1737		0x78
 #define SCH3112		0x7c
+#define SCH3114		0x7d
 #define SCH5307		0x81	/* Rebranded LPC47B397(?) */
 #define SCH5027D	0x89
 #define SCH4304		0x90	/* SCH4304, SCH4307 */
@@ -136,6 +137,7 @@ static const struct logical_devices {
 	{A8000,    {0, 3, 4,  5, -1,  7, -1,  -1, -1,  -1, -1, -1, 10, -1, -1}},
 	{DME1737,  {0, 3, 4,  5, -1,  7, -1,  -1, -1,  -1, -1, -1, 10, -1, -1}},
 	{SCH3112,  {0, 3, 4,  5, -1,  7, -1,  -1, -1,  -1, -1, -1, 10, -1, -1}},
+	{SCH3114,  {0, 3, 4,  5, -1,  7, -1,  -1, -1,  -1, -1, -1, 10, -1, -1}},
 	{SCH5307,  {0, 3, 4,  5, -1,  7, -1,  -1,  8,  -1, -1, -1, 10, -1, -1}},
 	{SCH5027D, {0, 3, 4,  5, -1,  7, -1,  -1, -1,  -1, -1, -1, 10, -1, 11}},
 	{SCH4304,  {0, 3, 4,  5, -1,  7, -1,  11, -1,  -1, -1, -1, 10, -1, -1}},
@@ -193,7 +195,7 @@ static void smsc_pnp_enable(device_t dev)
 {
 	smsc_pnp_enter_conf_state(dev);
 	pnp_set_logical_device(dev);
-	(dev->enabled) ? pnp_set_enable(dev, 1) : pnp_set_enable(dev, 0);
+	pnp_set_enable(dev, !!dev->enabled);
 	smsc_pnp_exit_conf_state(dev);
 }
 
@@ -205,7 +207,6 @@ static void smsc_pnp_enable(device_t dev)
 static void smsc_init(device_t dev)
 {
 	struct superio_smsc_smscsuperio_config *conf = dev->chip_info;
-	struct resource *res0;
 	int i, ld;
 
 	/* Do not initialize disabled devices. */
@@ -223,13 +224,7 @@ static void smsc_init(device_t dev)
 
 	/* A Super I/O was found, so initialize the respective device. */
 	ld = dev->path.pnp.device;
-	if (ld == logical_device_table[i].devs[LD_SP1]) {
-		res0 = find_resource(dev, PNP_IDX_IO0);
-		init_uart8250(res0->base, &conf->com1);
-	} else if (ld == logical_device_table[i].devs[LD_SP2]) {
-		res0 = find_resource(dev, PNP_IDX_IO0);
-		init_uart8250(res0->base, &conf->com2);
-	} else if (ld == logical_device_table[i].devs[LD_KBC]) {
+	if (ld == logical_device_table[i].devs[LD_KBC]) {
 		pc_keyboard_init(&conf->keyboard);
 	}
 }

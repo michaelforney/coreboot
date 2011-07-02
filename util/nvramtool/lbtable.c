@@ -29,6 +29,7 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 \*****************************************************************************/
 
+#include <arpa/inet.h>
 #include <string.h>
 #include <sys/mman.h>
 #include "common.h"
@@ -38,6 +39,7 @@
 #include "layout.h"
 #include "cmos_lowlevel.h"
 #include "hexdump.h"
+#include "cbfs.h"
 
 typedef void (*lbtable_print_fn_t) (const struct lb_record * rec);
 
@@ -61,22 +63,7 @@ static const struct lb_header *lbtable_scan(unsigned long start,
 					    unsigned long end,
 					    int *bad_header_count,
 					    int *bad_table_count);
-static void process_cmos_table(void);
-static void get_cmos_checksum_info(void);
-static void try_convert_checksum_layout(cmos_checksum_layout_t * layout);
-static void try_add_cmos_table_enum(cmos_enum_t * cmos_enum);
-static void try_add_cmos_table_entry(cmos_entry_t * cmos_entry);
-static const struct lb_record *find_lbrec(uint32_t tag);
 static const char *lbrec_tag_to_str(uint32_t tag);
-static const struct cmos_entries *first_cmos_table_entry(void);
-static const struct cmos_entries *next_cmos_table_entry(const struct
-							cmos_entries *last);
-static const struct cmos_enums *first_cmos_table_enum(void);
-static const struct cmos_enums *next_cmos_table_enum
-    (const struct cmos_enums *last);
-static const struct lb_record *first_cmos_rec(uint32_t tag);
-static const struct lb_record *next_cmos_rec(const struct lb_record *last,
-					     uint32_t tag);
 static void memory_print_fn(const struct lb_record *rec);
 static void mainboard_print_fn(const struct lb_record *rec);
 static void cmos_opt_table_print_fn(const struct lb_record *rec);
@@ -86,7 +73,6 @@ static void print_defaults_record(const struct cmos_defaults *cmos_defaults);
 static void print_unknown_record(const struct lb_record *cmos_item);
 static void option_checksum_print_fn(const struct lb_record *rec);
 static void string_print_fn(const struct lb_record *rec);
-static void uint64_to_hex_string(char str[], uint64_t n);
 
 static const char memory_desc[] =
     "    This shows information about system memory.\n";
@@ -228,13 +214,8 @@ static unsigned long low_phys_base = 0;
 /* Pointer to coreboot table. */
 static const struct lb_header *lbtable = NULL;
 
-/* The CMOS option table is located within the coreboot table.  It tells us
- * where the CMOS parameters are located in the nonvolatile RAM.
- */
-static const struct cmos_option_table *cmos_table = NULL;
-
 static const hexdump_format_t format =
-    { 12, 4, "            ", " | ", " ", " | ", '.', NULL };
+    { 12, 4, "            ", " | ", " ", " | ", '.' };
 
 /****************************************************************************
  * vtophys
@@ -316,32 +297,6 @@ void get_lbtable(void)
 }
 
 /****************************************************************************
- * get_layout_from_cmos_table
- *
- * Find the CMOS table which is stored within the coreboot table and set the
- * global variable cmos_table to point to it.
- ****************************************************************************/
-void get_layout_from_cmos_table(void)
-{
-
-	get_lbtable();
-	cmos_table = (const struct cmos_option_table *)
-	    find_lbrec(LB_TAG_CMOS_OPTION_TABLE);
-
-	if ((cmos_table) == NULL) {
-		fprintf(stderr,
-			"%s: CMOS option table not found in coreboot table.  "
-			"Apparently, the coreboot installed on this system was "
-			"built without specifying CONFIG_HAVE_OPTION_TABLE.\n",
-			prog_name);
-		exit(1);
-	}
-
-	process_cmos_table();
-	get_cmos_checksum_info();
-}
-
-/****************************************************************************
  * dump_lbtable
  *
  * Do a low-level dump of the coreboot table.
@@ -360,7 +315,7 @@ void dump_lbtable(void)
 	       "    table_bytes:     0x%x (decimal: %d)\n"
 	       "    table_checksum:  0x%x (decimal: %d)\n"
 	       "    table_entries:   0x%x (decimal: %d)\n\n",
-	       vtophys(lbtable), *((uint32_t *) lbtable->signature),
+	       vtophys(lbtable), lbtable->signature32,
 	       lbtable->signature[0], lbtable->signature[1],
 	       lbtable->signature[2], lbtable->signature[3],
 	       lbtable->header_bytes, lbtable->header_bytes,
@@ -483,14 +438,14 @@ static const struct lb_header *lbtable_scan(unsigned long start,
 					    int *bad_header_count,
 					    int *bad_table_count)
 {
-	static const char signature[] = { 'L', 'B', 'I', 'O' };
+	static const char signature[4] = { 'L', 'B', 'I', 'O' };
 	const struct lb_header *table;
 	const struct lb_forward *forward;
 	const uint32_t *p;
 	uint32_t sig;
 
 	assert(end >= start);
-	sig = (*((const uint32_t *)signature));
+	memcpy(&sig, signature, sizeof(sig));
 	table = NULL;
 	*bad_header_count = 0;
 	*bad_table_count = 0;
@@ -557,271 +512,12 @@ static const struct lb_header *lbtable_scan(unsigned long start,
 }
 
 /****************************************************************************
- * process_cmos_table
- *
- * Extract layout information from the CMOS option table and store it in our
- * internal repository.
- ****************************************************************************/
-static void process_cmos_table(void)
-{
-	const struct cmos_enums *p;
-	const struct cmos_entries *q;
-	cmos_enum_t cmos_enum;
-	cmos_entry_t cmos_entry;
-
-	/* First add the enums. */
-	for (p = first_cmos_table_enum(); p != NULL;
-	     p = next_cmos_table_enum(p)) {
-		cmos_enum.config_id = p->config_id;
-		cmos_enum.value = p->value;
-		strncpy(cmos_enum.text, (char *)p->text, CMOS_MAX_TEXT_LENGTH);
-		cmos_enum.text[CMOS_MAX_TEXT_LENGTH] = '\0';
-		try_add_cmos_table_enum(&cmos_enum);
-	}
-
-	/* Now add the entries.  We must add the entries after the enums because
-	 * the entries are sanity checked against the enums as they are added.
-	 */
-	for (q = first_cmos_table_entry(); q != NULL;
-	     q = next_cmos_table_entry(q)) {
-		cmos_entry.bit = q->bit;
-		cmos_entry.length = q->length;
-
-		switch (q->config) {
-		case 'e':
-			cmos_entry.config = CMOS_ENTRY_ENUM;
-			break;
-
-		case 'h':
-			cmos_entry.config = CMOS_ENTRY_HEX;
-			break;
-
-		case 'r':
-			cmos_entry.config = CMOS_ENTRY_RESERVED;
-			break;
-
-		case 's':
-			cmos_entry.config = CMOS_ENTRY_STRING;
-			break;
-
-		default:
-			fprintf(stderr,
-				"%s: Entry in CMOS option table has unknown config "
-				"value.\n", prog_name);
-			exit(1);
-		}
-
-		cmos_entry.config_id = q->config_id;
-		strncpy(cmos_entry.name, (char *)q->name, CMOS_MAX_NAME_LENGTH);
-		cmos_entry.name[CMOS_MAX_NAME_LENGTH] = '\0';
-		try_add_cmos_table_entry(&cmos_entry);
-	}
-}
-
-/****************************************************************************
- * get_cmos_checksum_info
- *
- * Get layout information for CMOS checksum.
- ****************************************************************************/
-static void get_cmos_checksum_info(void)
-{
-	const cmos_entry_t *e;
-	struct cmos_checksum *checksum;
-	cmos_checksum_layout_t layout;
-	unsigned index, index2;
-
-	checksum = (struct cmos_checksum *)find_lbrec(LB_TAG_OPTION_CHECKSUM);
-
-	if (checksum != NULL) {	/* We are lucky.  The coreboot table hints us to the checksum.
-				 * We might have to check the type field here though.
-				 */
-		layout.summed_area_start = checksum->range_start;
-		layout.summed_area_end = checksum->range_end;
-		layout.checksum_at = checksum->location;
-		try_convert_checksum_layout(&layout);
-		cmos_checksum_start = layout.summed_area_start;
-		cmos_checksum_end = layout.summed_area_end;
-		cmos_checksum_index = layout.checksum_at;
-		return;
-	}
-
-	if ((e = find_cmos_entry(checksum_param_name)) == NULL)
-		return;
-
-	/* If we get here, we are unlucky.  The CMOS option table contains the
-	 * location of the CMOS checksum.  However, there is no information
-	 * regarding which bytes of the CMOS area the checksum is computed over.
-	 * Thus we have to hope our presets will be fine.
-	 */
-
-	if (e->bit % 8) {
-		fprintf(stderr,
-			"%s: Error: CMOS checksum is not byte-aligned.\n",
-			prog_name);
-		exit(1);
-	}
-
-	index = e->bit / 8;
-	index2 = index + 1;	/* The CMOS checksum occupies 16 bits. */
-
-	if (verify_cmos_byte_index(index) || verify_cmos_byte_index(index2)) {
-		fprintf(stderr,
-			"%s: Error: CMOS checksum location out of range.\n",
-			prog_name);
-		exit(1);
-	}
-
-	if (((index >= cmos_checksum_start) && (index <= cmos_checksum_end)) ||
-	    (((index2) >= cmos_checksum_start)
-	     && ((index2) <= cmos_checksum_end))) {
-		fprintf(stderr,
-			"%s: Error: CMOS checksum overlaps checksummed area.\n",
-			prog_name);
-		exit(1);
-	}
-
-	cmos_checksum_index = index;
-}
-
-/****************************************************************************
- * try_convert_checksum_layout
- *
- * Perform sanity checking on CMOS checksum layout information and attempt to
- * convert information from bit positions to byte positions.  Return OK on
- * success or an error code on failure.
- ****************************************************************************/
-static void try_convert_checksum_layout(cmos_checksum_layout_t * layout)
-{
-	switch (checksum_layout_to_bytes(layout)) {
-	case OK:
-		return;
-
-	case LAYOUT_SUMMED_AREA_START_NOT_ALIGNED:
-		fprintf(stderr,
-			"%s: CMOS checksummed area start is not byte-aligned.\n",
-			prog_name);
-		break;
-
-	case LAYOUT_SUMMED_AREA_END_NOT_ALIGNED:
-		fprintf(stderr,
-			"%s: CMOS checksummed area end is not byte-aligned.\n",
-			prog_name);
-		break;
-
-	case LAYOUT_CHECKSUM_LOCATION_NOT_ALIGNED:
-		fprintf(stderr,
-			"%s: CMOS checksum location is not byte-aligned.\n",
-			prog_name);
-		break;
-
-	case LAYOUT_INVALID_SUMMED_AREA:
-		fprintf(stderr,
-			"%s: CMOS checksummed area end must be greater than "
-			"CMOS checksummed area start.\n", prog_name);
-		break;
-
-	case LAYOUT_CHECKSUM_OVERLAPS_SUMMED_AREA:
-		fprintf(stderr,
-			"%s: CMOS checksum overlaps checksummed area.\n",
-			prog_name);
-		break;
-
-	case LAYOUT_SUMMED_AREA_OUT_OF_RANGE:
-		fprintf(stderr,
-			"%s: CMOS checksummed area out of range.\n", prog_name);
-		break;
-
-	case LAYOUT_CHECKSUM_LOCATION_OUT_OF_RANGE:
-		fprintf(stderr,
-			"%s: CMOS checksum location out of range.\n",
-			prog_name);
-		break;
-
-	default:
-		BUG();
-	}
-
-	exit(1);
-}
-
-/****************************************************************************
- * try_add_cmos_table_enum
- *
- * Attempt to add a CMOS enum to our internal repository.  Exit with an error
- * message on failure.
- ****************************************************************************/
-static void try_add_cmos_table_enum(cmos_enum_t * cmos_enum)
-{
-	switch (add_cmos_enum(cmos_enum)) {
-	case OK:
-		return;
-
-	case LAYOUT_DUPLICATE_ENUM:
-		fprintf(stderr, "%s: Duplicate enum %s found in CMOS option "
-			"table.\n", prog_name, cmos_enum->text);
-		break;
-
-	default:
-		BUG();
-	}
-
-	exit(1);
-}
-
-/****************************************************************************
- * try_add_cmos_table_entry
- *
- * Attempt to add a CMOS entry to our internal repository.  Exit with an
- * error message on failure.
- ****************************************************************************/
-static void try_add_cmos_table_entry(cmos_entry_t * cmos_entry)
-{
-	const cmos_entry_t *conflict;
-
-	switch (add_cmos_entry(cmos_entry, &conflict)) {
-	case OK:
-		return;
-
-	case CMOS_AREA_OUT_OF_RANGE:
-		fprintf(stderr,
-			"%s: Bad CMOS option layout in CMOS option table entry "
-			"%s.\n", prog_name, cmos_entry->name);
-		break;
-
-	case CMOS_AREA_TOO_WIDE:
-		fprintf(stderr,
-			"%s: Area too wide for CMOS option table entry %s.\n",
-			prog_name, cmos_entry->name);
-		break;
-
-	case LAYOUT_ENTRY_OVERLAP:
-		fprintf(stderr,
-			"%s: CMOS option table entries %s and %s have overlapping "
-			"layouts.\n", prog_name, cmos_entry->name,
-			conflict->name);
-		break;
-
-	case LAYOUT_ENTRY_BAD_LENGTH:
-		/* Silently ignore entries with zero length.  Although this should
-		 * never happen in practice, we should handle the case in a
-		 * reasonable manner just to be safe.
-		 */
-		return;
-
-	default:
-		BUG();
-	}
-
-	exit(1);
-}
-
-/****************************************************************************
  * find_lbrec
  *
  * Find the record in the coreboot table that matches 'tag'.  Return pointer
  * to record on success or NULL if record not found.
  ****************************************************************************/
-static const struct lb_record *find_lbrec(uint32_t tag)
+const struct lb_record *find_lbrec(uint32_t tag)
 {
 	const char *p;
 	uint32_t bytes_processed;
@@ -915,129 +611,12 @@ static const char *lbrec_tag_to_str(uint32_t tag)
 }
 
 /****************************************************************************
- * first_cmos_table_entry
- *
- * Return a pointer to the first entry in the CMOS table that represents a
- * CMOS parameter.  Return NULL if CMOS table is empty.
- ****************************************************************************/
-static const struct cmos_entries *first_cmos_table_entry(void)
-{
-	return (const struct cmos_entries *)first_cmos_rec(LB_TAG_OPTION);
-}
-
-/****************************************************************************
- * next_cmos_table_entry
- *
- * Return a pointer to the next entry after 'last' in the CMOS table that
- * represents a CMOS parameter.  Return NULL if there are no more parameters.
- ****************************************************************************/
-static const struct cmos_entries *next_cmos_table_entry(const struct
-							cmos_entries *last)
-{
-	return (const struct cmos_entries *)
-	    next_cmos_rec((const struct lb_record *)last, LB_TAG_OPTION);
-}
-
-/****************************************************************************
- * first_cmos_table_enum
- *
- * Return a pointer to the first entry in the CMOS table that represents a
- * possible CMOS parameter value.  Return NULL if the table does not contain
- * any such entries.
- ****************************************************************************/
-static const struct cmos_enums *first_cmos_table_enum(void)
-{
-	return (const struct cmos_enums *)first_cmos_rec(LB_TAG_OPTION_ENUM);
-}
-
-/****************************************************************************
- * next_cmos_table_enum
- *
- * Return a pointer to the next entry after 'last' in the CMOS table that
- * represents a possible CMOS parameter value.  Return NULL if there are no
- * more parameter values.
- ****************************************************************************/
-static const struct cmos_enums *next_cmos_table_enum
-    (const struct cmos_enums *last) {
-	return (const struct cmos_enums *)
-	    next_cmos_rec((const struct lb_record *)last, LB_TAG_OPTION_ENUM);
-}
-
-/****************************************************************************
- * first_cmos_rec
- *
- * Return a pointer to the first entry in the CMOS table whose type matches
- * 'tag'.  Return NULL if CMOS table contains no such entry.
- *
- * Possible values for 'tag' are as follows:
- *
- *     LB_TAG_OPTION:      The entry represents a CMOS parameter.
- *     LB_TAG_OPTION_ENUM: The entry represents a possible value for a CMOS
- *                         parameter of type 'enum'.
- *
- * The CMOS table tells us where in the nonvolatile RAM to look for CMOS
- * parameter values and specifies their types as 'enum', 'hex', or
- * 'reserved'.
- ****************************************************************************/
-static const struct lb_record *first_cmos_rec(uint32_t tag)
-{
-	const char *p;
-	uint32_t bytes_processed, bytes_for_entries;
-	const struct lb_record *lbrec;
-
-	p = ((const char *)cmos_table) + cmos_table->header_length;
-	bytes_for_entries = cmos_table->size - cmos_table->header_length;
-
-	for (bytes_processed = 0;
-	     bytes_processed < bytes_for_entries;
-	     bytes_processed += lbrec->size) {
-		lbrec = (const struct lb_record *)&p[bytes_processed];
-
-		if (lbrec->tag == tag)
-			return lbrec;
-	}
-
-	return NULL;
-}
-
-/****************************************************************************
- * next_cmos_rec
- *
- * Return a pointer to the next entry after 'last' in the CMOS table whose
- * type matches 'tag'.  Return NULL if the table contains no more entries of
- * this type.
- ****************************************************************************/
-static const struct lb_record *next_cmos_rec(const struct lb_record *last,
-					     uint32_t tag)
-{
-	const char *p;
-	uint32_t bytes_processed, bytes_for_entries, last_offset;
-	const struct lb_record *lbrec;
-
-	p = ((const char *)cmos_table) + cmos_table->header_length;
-	bytes_for_entries = cmos_table->size - cmos_table->header_length;
-	last_offset = ((const char *)last) - p;
-
-	for (bytes_processed = last_offset + last->size;
-	     bytes_processed < bytes_for_entries;
-	     bytes_processed += lbrec->size) {
-		lbrec = (const struct lb_record *)&p[bytes_processed];
-
-		if (lbrec->tag == tag)
-			return lbrec;
-	}
-
-	return NULL;
-}
-
-/****************************************************************************
  * memory_print_fn
  *
  * Display function for 'memory' item of coreboot table.
  ****************************************************************************/
 static void memory_print_fn(const struct lb_record *rec)
 {
-	char start_str[19], end_str[19], size_str[19];
 	const struct lb_memory *p;
 	const char *mem_type;
 	const struct lb_memory_range *ranges;
@@ -1075,13 +654,10 @@ static void memory_print_fn(const struct lb_record *rec)
 		size = unpack_lb64(ranges[i].size);
 		start = unpack_lb64(ranges[i].start);
 		end = start + size - 1;
-		uint64_to_hex_string(start_str, start);
-		uint64_to_hex_string(end_str, end);
-		uint64_to_hex_string(size_str, size);
 		printf("%s memory:\n"
-		       "    from physical addresses %s to %s\n"
-		       "    size is %s bytes (%lld in decimal)\n",
-		       mem_type, start_str, end_str, size_str,
+		       "    from physical addresses 0x%016llx to 0x%016llx\n"
+		       "    size is 0x%016llx bytes (%lld in decimal)\n",
+		       mem_type, start, end, size,
 		       (unsigned long long)size);
 
 		if (++i >= entries)
@@ -1306,24 +882,3 @@ static void string_print_fn(const struct lb_record *rec)
 	printf("%s\n", p->string);
 }
 
-/****************************************************************************
- * uint64_to_hex_string
- *
- * Convert the 64-bit integer 'n' to its hexadecimal string representation,
- * storing the result in 's'.  's' must point to a buffer at least 19 bytes
- * long.  The result is displayed with as many leading zeros as needed to
- * make a 16-digit hex number including a 0x prefix (example: the number 1
- * will be displayed as "0x0000000000000001").
- ****************************************************************************/
-static void uint64_to_hex_string(char str[], uint64_t n)
-{
-	int chars_printed;
-
-	str[0] = '0';
-	str[1] = 'x';
-
-	/* Print the result right-justified with leading spaces in a
-	 * 16-character field. */
-	chars_printed = sprintf(&str[2], "%016llx", (unsigned long long)n);
-	assert(chars_printed == 16);
-}

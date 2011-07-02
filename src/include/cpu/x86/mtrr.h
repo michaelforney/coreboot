@@ -1,7 +1,6 @@
 #ifndef CPU_X86_MTRR_H
 #define CPU_X86_MTRR_H
 
-
 /*  These are the region types  */
 #define MTRR_TYPE_UNCACHEABLE 0
 #define MTRR_TYPE_WRCOMB     1
@@ -21,6 +20,8 @@
 #define MTRRphysBase_MSR(reg) (0x200 + 2 * (reg))
 #define MTRRphysMask_MSR(reg) (0x200 + 2 * (reg) + 1)
 
+#define MTRRphysMaskValid	(1 << 11)
+
 #define NUM_FIXED_RANGES 88
 #define MTRRfix64K_00000_MSR 0x250
 #define MTRRfix16K_80000_MSR 0x258
@@ -34,7 +35,7 @@
 #define MTRRfix4K_F0000_MSR 0x26e
 #define MTRRfix4K_F8000_MSR 0x26f
 
-#if !defined (ASSEMBLY) && !defined(__PRE_RAM__)
+#if !defined (__ASSEMBLER__) && !defined(__PRE_RAM__)
 #include <device/device.h>
 void enable_fixed_mtrr(void);
 void x86_setup_var_mtrrs(unsigned int address_bits, unsigned int above4gb);
@@ -62,14 +63,13 @@ void x86_setup_fixed_mtrrs(void);
 # error "CONFIG_XIP_ROM_BASE is not a multiple of CONFIG_XIP_ROM_SIZE"
 #endif
 
-#if (CONFIG_RAMTOP & (CONFIG_RAMTOP -1)) != 0
+#if (CONFIG_RAMTOP & (CONFIG_RAMTOP - 1)) != 0
 # error "CONFIG_RAMTOP must be a power of 2"
 #endif
 
-
-#if !defined (ASSEMBLY)
+#if !defined (__ASSEMBLER__)
 #if defined(CONFIG_XIP_ROM_SIZE)
-# if defined(CONFIG_TINY_BOOTBLOCK) && CONFIG_TINY_BOOTBLOCK
+# if CONFIG_TINY_BOOTBLOCK
    extern unsigned long AUTO_XIP_ROM_BASE;
 #  define REAL_XIP_ROM_BASE AUTO_XIP_ROM_BASE
 # else

@@ -137,13 +137,8 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	pnp_exit_ext_func_mode(SERIAL_DEV);
 
 	setup_mb_resource_map();
-	uart_init();
-	report_bist_failure(bist); /* Halt upon BIST failure. */
-#if CONFIG_USBDEBUG
-	mcp55_enable_usbdebug(CONFIG_USBDEBUG_DEFAULT_PORT);
-	early_usbdebug_init();
-#endif
 	console_init();
+	report_bist_failure(bist); /* Halt upon BIST failure. */
 
 	printk(BIOS_DEBUG, "*sysinfo range: [%p,%p]\n",sysinfo,sysinfo+1);
 	print_debug("bsp_apicid=");

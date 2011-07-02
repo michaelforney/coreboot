@@ -31,7 +31,6 @@
 #include "cpu/x86/bist.h"
 #include "cpu/x86/msr.h"
 #include <cpu/amd/lxdef.h>
-#include <cpu/amd/geode_post_code.h>
 #include "southbridge/amd/cs5536/cs5536.h"
 #include <spd.h>
 #include "southbridge/amd/cs5536/early_smbus.c"
@@ -118,7 +117,6 @@ static void mb_gpio_init(void)
 
 void main(unsigned long bist)
 {
-	post_code(0x01);
 
 	static const struct mem_controller memctrl[] = {
 		{.channel0 = {DIMM0, DIMM1}}
@@ -135,7 +133,6 @@ void main(unsigned long bist)
 	 */
 	it8712f_enable_serial(0, CONFIG_TTYS0_BASE); // Does not use its 1st parameter
 	mb_gpio_init();
-	uart_init();
 	console_init();
 
 	/* Halt if there was a built in self test failure */
@@ -158,5 +155,4 @@ void main(unsigned long bist)
 	sdram_initialize(1, memctrl);
 
 	/* Memory is setup. Return to cache_as_ram.inc and continue to boot. */
-	return;
 }

@@ -36,6 +36,25 @@
 #include "common.h"
 #include "cmos_lowlevel.h"
 
+/* Hardware Abstraction Layer: lowlevel byte-wise write access */
+
+extern cmos_access_t cmos_hal, memory_hal;
+static cmos_access_t *current_access = &cmos_hal;
+
+void select_hal(hal_t hal, void *data)
+{
+	switch(hal) {
+		case HAL_CMOS:
+			current_access = &cmos_hal;
+			break;
+		case HAL_MEMORY:
+			current_access = &memory_hal;
+			break;
+	}
+	current_access->init(data);
+}
+
+/* Bit-level access */
 typedef struct {
 	unsigned byte_index;
 	unsigned bit_offset;
@@ -181,20 +200,7 @@ void cmos_write(const cmos_entry_t * e, unsigned long long value)
  ****************************************************************************/
 unsigned char cmos_read_byte(unsigned index)
 {
-	unsigned short port_0, port_1;
-
-	assert(!verify_cmos_byte_index(index));
-
-	if (index < 128) {
-		port_0 = 0x70;
-		port_1 = 0x71;
-	} else {
-		port_0 = 0x72;
-		port_1 = 0x73;
-	}
-
-	OUTB(index, port_0);
-	return INB(port_1);
+	return current_access->read(index);
 }
 
 /****************************************************************************
@@ -209,20 +215,7 @@ unsigned char cmos_read_byte(unsigned index)
  ****************************************************************************/
 void cmos_write_byte(unsigned index, unsigned char value)
 {
-	unsigned short port_0, port_1;
-
-	assert(!verify_cmos_byte_index(index));
-
-	if (index < 128) {
-		port_0 = 0x70;
-		port_1 = 0x71;
-	} else {
-		port_0 = 0x72;
-		port_1 = 0x73;
-	}
-
-	OUTB(index, port_0);
-	OUTB(value, port_1);
+	current_access->write(index, value);
 }
 
 /****************************************************************************
@@ -268,34 +261,7 @@ void cmos_write_all(unsigned char data[])
  ****************************************************************************/
 void set_iopl(int level)
 {
-#if defined(__FreeBSD__)
-	static int io_fd = -1;
-#endif
-
-	assert((level >= 0) && (level <= 3));
-
-#if defined(__FreeBSD__)
-	if (level == 0) {
-		if (io_fd != -1) {
-			close(io_fd);
-			io_fd = -1;
-		}
-	} else {
-		if (io_fd == -1) {
-			io_fd = open("/dev/io", O_RDWR);
-			if (io_fd < 0) {
-				perror("/dev/io");
-				exit(1);
-			}
-		}
-	}
-#else
-	if (iopl(level)) {
-		fprintf(stderr, "%s: iopl() system call failed.  "
-			"You must be root to do this.\n", prog_name);
-		exit(1);
-	}
-#endif
+	current_access->set_iopl(level);
 }
 
 /****************************************************************************

@@ -15,38 +15,40 @@
 
 /* put this here for now, we are not sure where it belongs */
 
-struct gliutable {
+struct gliutable
+{
 	unsigned long desc_name;
 	unsigned short desc_type;
 	unsigned long hi, lo;
 };
 
 struct gliutable gliu0table[] = {
-	{.desc_name=MSR_GLIU0_BASE1,  .desc_type= BM,.hi= MSR_MC + 0x0,.lo=  0x0FFF80},		/* 0-7FFFF to MC */
-	{.desc_name=MSR_GLIU0_BASE2,  .desc_type= BM,.hi= MSR_MC + 0x0,.lo=(0x80 << 20) + 0x0FFFE0},	/* 80000-9ffff to Mc */
-	{.desc_name=MSR_GLIU0_SHADOW, .desc_type= SC_SHADOW,.hi=  MSR_MC + 0x0,.lo=  0x03},	/* C0000-Fffff split to MC and PCI (sub decode) A0000-Bffff handled by SoftVideo */
-	{.desc_name=MSR_GLIU0_SYSMEM, .desc_type= R_SYSMEM,.hi=  MSR_MC,.lo=  0x0},		/* Catch and fix dynamicly. */
-	{.desc_name=MSR_GLIU0_DMM,    .desc_type= BMO_DMM,.hi=  MSR_MC,.lo=  0x0},		/* Catch and fix dynamicly. */
-	{.desc_name=MSR_GLIU0_SMM,    .desc_type= BMO_SMM,.hi=  MSR_MC,.lo=  0x0},		/* Catch and fix dynamicly. */
+	{.desc_name=GLIU0_P2D_BM_0,  .desc_type= BM,.hi= MSR_MC + 0x0,.lo=  0x0FFF80},			/* 0-7FFFF to MC */
+	{.desc_name=GLIU0_P2D_BM_1,  .desc_type= BM,.hi= MSR_MC + 0x0,.lo=(0x80 << 20) + 0x0FFFE0},	/* 80000-9ffff to Mc */
+	{.desc_name=GLIU0_P2D_SC_0, .desc_type= SC_SHADOW,.hi=  MSR_MC + 0x0,.lo=  0x03},		/* C0000-Fffff split to MC and PCI (sub decode) A0000-Bffff handled by SoftVideo */
+	{.desc_name=GLIU0_P2D_R_0, .desc_type= R_SYSMEM,.hi=  MSR_MC,.lo=  0x0},			/* Catch and fix dynamicly. */
+	{.desc_name=GLIU0_P2D_BMO_1,    .desc_type= BMO_DMM,.hi=  MSR_MC,.lo=  0x0},			/* Catch and fix dynamicly. */
+	{.desc_name=GLIU0_P2D_BMO_0,    .desc_type= BMO_SMM,.hi=  MSR_MC,.lo=  0x0},			/* Catch and fix dynamicly. */
 	{.desc_name=GLIU0_GLD_MSR_COH,.desc_type= OTHER,.hi= 0x0,.lo= GL0_CPU},
 	{.desc_name=GL_END,           .desc_type= GL_END,.hi= 0x0,.lo= 0x0},
 };
 
 struct gliutable gliu1table[] = {
-	{.desc_name=MSR_GLIU1_BASE1,.desc_type=  BM,.hi=  MSR_GL0 + 0x0,.lo=  0x0FFF80},	/* 0-7FFFF to MC */
-	{.desc_name=MSR_GLIU1_BASE2,.desc_type=  BM,.hi=  MSR_GL0 + 0x0,.lo= (0x80 << 20) +0x0FFFE0},	/* 80000-9ffff to Mc */
-	{.desc_name=MSR_GLIU1_SHADOW,.desc_type=  SC_SHADOW,.hi=  MSR_GL0 + 0x0,.lo=  0x03},	/* C0000-Fffff split to MC and PCI (sub decode) */
-	{.desc_name=MSR_GLIU1_SYSMEM,.desc_type=  R_SYSMEM,.hi=  MSR_GL0,.lo=  0x0},		/* Catch and fix dynamicly. */
-	{.desc_name=MSR_GLIU1_DMM,.desc_type=  BM_DMM,.hi=  MSR_GL0,.lo=  0x0},			/* Catch and fix dynamicly. */
-	{.desc_name=MSR_GLIU1_SMM,.desc_type=  BM_SMM,.hi=  MSR_GL0,.lo=  0x0},			/* Catch and fix dynamicly. */
+	{.desc_name=GLIU1_P2D_BM_0,.desc_type=  BM,.hi=  MSR_GL0 + 0x0,.lo=  0x0FFF80},		/* 0-7FFFF to MC */
+	{.desc_name=GLIU1_P2D_BM_1,.desc_type=  BM,.hi=  MSR_GL0 + 0x0,.lo= (0x80 << 20) +0x0FFFE0},	/* 80000-9ffff to Mc */
+	{.desc_name=GLIU1_P2D_SC_0,.desc_type=  SC_SHADOW,.hi=  MSR_GL0 + 0x0,.lo=  0x03},		/* C0000-Fffff split to MC and PCI (sub decode) */
+	{.desc_name=GLIU1_P2D_R_0,.desc_type=  R_SYSMEM,.hi=  MSR_GL0,.lo=  0x0},			/* Catch and fix dynamicly. */
+	{.desc_name=GLIU1_P2D_BM_4,.desc_type=  BM_DMM,.hi=  MSR_GL0,.lo=  0x0},				/* Catch and fix dynamicly. */
+	{.desc_name=GLIU1_P2D_BM_3,.desc_type=  BM_SMM,.hi=  MSR_GL0,.lo=  0x0},				/* Catch and fix dynamicly. */
 	{.desc_name=GLIU1_GLD_MSR_COH,.desc_type= OTHER,.hi= 0x0,.lo= GL1_GLIU0},
-	{.desc_name=MSR_GLIU1_FPU_TRAP,.desc_type=  SCIO,.hi=  (GL1_GLCP << 29) + 0x0,.lo=  0x033000F0},	/* FooGlue FPU 0xF0 */
+	{.desc_name=GLIU1_IOD_SC_0,.desc_type=  SCIO,.hi=  (GL1_GLCP << 29) + 0x0,.lo=  0x033000F0}, /* FooGlue FPU 0xF0 */
 	{.desc_name=GL_END,.desc_type= GL_END,.hi= 0x0,.lo= 0x0},
 };
 
 struct gliutable *gliutables[]  = {gliu0table, gliu1table, 0};
 
-struct msrinit {
+struct msrinit
+{
 	unsigned long msrnum;
 	msr_t msr;
 };
@@ -56,15 +58,16 @@ struct msrinit ClockGatingDefault [] = {
 	/* MC must stay off in SDR mode. It is turned on in CPUBug??? lotus #77.142 */
 	{MC_GLD_MSR_PM,		{.hi=0x00,.lo=0x0000}},
 	{GLIU1_GLD_MSR_PM,	{.hi=0x00,.lo=0x0005}},
-	{VG_GLD_MSR_PM,		{.hi=0x00,.lo=0x0000}},		/* lotus #77.163 */
+	{VG_GLD_MSR_PM,		{.hi=0x00,.lo=0x0000}},	/* lotus #77.163 */
 	{GP_GLD_MSR_PM,		{.hi=0x00,.lo=0x0001}},
 	{DF_GLD_MSR_PM,		{.hi=0x00,.lo=0x0155}},
 	{GLCP_GLD_MSR_PM,	{.hi=0x00,.lo=0x0015}},
 	{GLPCI_GLD_MSR_PM,	{.hi=0x00,.lo=0x0015}},
-	{FG_GLD_MSR_PM,		{.hi=0x00,.lo=0x0000}},		/* Always on */
+	{FG_GLD_MSR_PM,		{.hi=0x00,.lo=0x0000}},	/* Always on */
 	{0xffffffff, 				{0xffffffff, 0xffffffff}},
 };
-	/*  All On */
+
+/* All On */
 struct msrinit ClockGatingAllOn[] = {
 	{GLIU0_GLD_MSR_PM,	{.hi=0x00,.lo=0x0FFFFFFFF}},
 	{MC_GLD_MSR_PM,		{.hi=0x00,.lo=0x0FFFFFFFF}},
@@ -78,16 +81,16 @@ struct msrinit ClockGatingAllOn[] = {
  	{0xffffffff, 				{0xffffffff, 0xffffffff}},
 };
 
-	/* Performance */
+/* Performance */
 struct msrinit ClockGatingPerformance[] = {
-	{VG_GLD_MSR_PM,		{.hi=0x00,.lo=0x0000}},		/*  lotus #77.163*/
+	{VG_GLD_MSR_PM,		{.hi=0x00,.lo=0x0000}},	/* lotus #77.163 */
 	{GP_GLD_MSR_PM,		{.hi=0x00,.lo=0x0001}},
 	{DF_GLD_MSR_PM,		{.hi=0x00,.lo=0x0155}},
 	{GLCP_GLD_MSR_PM,	{.hi=0x00,.lo=0x0015}},
 	{0xffffffff, 				{0xffffffff, 0xffffffff}},
 };
 
-	/* SET GeodeLink PRIORITY */
+/* SET GeodeLink PRIORITY */
 struct msrinit GeodeLinkPriorityTable [] = {
 	{CPU_GLD_MSR_CONFIG,		{.hi=0x00,.lo=0x0220}},		/* CPU Priority. */
 	{DF_GLD_MSR_MASTER_CONF,	{.hi=0x00,.lo=0x0000}},		/* DF Priority. */
@@ -95,16 +98,15 @@ struct msrinit GeodeLinkPriorityTable [] = {
 	{GP_GLD_MSR_CONFIG,		{.hi=0x00,.lo=0x0010}},		/* Graphics Priority. */
 	{GLPCI_GLD_MSR_CONFIG,		{.hi=0x00,.lo=0x0027}},		/* GLPCI Priority + PID */
 	{GLCP_GLD_MSR_CONF,		{.hi=0x00,.lo=0x0001}},		/* GLCP Priority + PID */
-	{VIP_GLD_MSR_CONFIG,		{.hi=0x00,.lo=0x0622}},		/* VIP PID */
-	{AES_GLD_MSR_CONFIG,		{.hi=0x00,.lo=0x0013}},		/* AES PID */
+	{FG_GLD_MSR_CONFIG,		{.hi=0x00,.lo=0x0622}},		/* FG PID */
 	{0x0FFFFFFFF, 			{0x0FFFFFFFF, 0x0FFFFFFFF}},	/* END */
 };
 
 /* do we have dmi or not? assume NO per AMD */
 int havedmi = 0;
 
-static void
-writeglmsr(struct gliutable *gl){
+static void writeglmsr(struct gliutable *gl)
+{
 	msr_t msr;
 
 	msr.lo = gl->lo;
@@ -116,8 +118,7 @@ writeglmsr(struct gliutable *gl){
 	printk(BIOS_DEBUG, "%s: AFTER write msr 0x%08lx, val 0x%08x:0x%08x\n", __func__, gl->desc_name, msr.hi, msr.lo);
 }
 
-static void
-ShadowInit(struct gliutable *gl)
+static void ShadowInit(struct gliutable *gl)
 {
 	msr_t msr;
 
@@ -132,14 +133,12 @@ ShadowInit(struct gliutable *gl)
  * CLEAN ME UP
  */
 /* yes, this duplicates later code, but it seems that is how they want it done. */
-static void
-SysmemInit(struct gliutable *gl)
+static void SysmemInit(struct gliutable *gl)
 {
 	msr_t msr;
 	int sizembytes, sizebytes;
 
-	/*
-	 * Figure out how much RAM is in the machine and alocate all to the
+	/* Figure out how much RAM is in the machine and alocate all to the
 	 * system. We will adjust for SMM and DMM now and Frame Buffer later.
 	 */
 	sizembytes = sizeram();
@@ -164,8 +163,8 @@ SysmemInit(struct gliutable *gl)
 				gl->desc_name, msr.hi, msr.lo);
 }
 
-static void
-DMMGL0Init(struct gliutable *gl) {
+static void DMMGL0Init(struct gliutable *gl)
+{
 	msr_t msr;
 	int sizebytes = sizeram()<<20;
 	long offset;
@@ -191,8 +190,8 @@ DMMGL0Init(struct gliutable *gl) {
 	printk(BIOS_DEBUG, "%s: AFTER write msr 0x%08lx, val 0x%08x:0x%08x\n", __func__, gl->desc_name, msr.hi, msr.lo);
 }
 
-static void
-DMMGL1Init(struct gliutable *gl) {
+static void DMMGL1Init(struct gliutable *gl)
+{
 	msr_t msr;
 
 	if (! havedmi)
@@ -214,8 +213,8 @@ DMMGL1Init(struct gliutable *gl) {
 	printk(BIOS_DEBUG, "%s: AFTER write msr 0x%08lx, val 0x%08x:0x%08x\n", __func__, gl->desc_name, msr.hi, msr.lo);
 }
 
-static void
-SMMGL0Init(struct gliutable *gl) {
+static void SMMGL0Init(struct gliutable *gl)
+{
 	msr_t msr;
 	int sizebytes = sizeram()<<20;
 	long offset;
@@ -242,8 +241,8 @@ SMMGL0Init(struct gliutable *gl) {
 	printk(BIOS_DEBUG, "%s: AFTER write msr 0x%08lx, val 0x%08x:0x%08x\n", __func__, gl->desc_name, msr.hi, msr.lo);
 }
 
-static void
-SMMGL1Init(struct gliutable *gl) {
+static void SMMGL1Init(struct gliutable *gl)
+{
 	msr_t msr;
 	printk(BIOS_DEBUG, "%s:\n", __func__ );
 
@@ -259,9 +258,8 @@ SMMGL1Init(struct gliutable *gl) {
 	printk(BIOS_DEBUG, "%s: AFTER write msr 0x%08lx, val 0x%08x:0x%08x\n", __func__, gl->desc_name, msr.hi, msr.lo);
 }
 
-static void
-GLIUInit(struct gliutable *gl){
-
+static void GLIUInit(struct gliutable *gl)
+{
 	while (gl->desc_type != GL_END){
 		switch(gl->desc_type){
 		default:
@@ -295,8 +293,7 @@ GLIUInit(struct gliutable *gl){
 	}
 }
 
-/*
- * Set up GLPCI settings for reads/write into memory.
+/* Set up GLPCI settings for reads/write into memory.
  *
  * R0:  0-640KB,
  * R1:  1MB - Top of System Memory
@@ -304,7 +301,8 @@ GLIUInit(struct gliutable *gl){
  * R3: Framebuffer? - not set up yet
  * R4: ??
  */
-static void GLPCIInit(void){
+static void GLPCIInit(void)
+{
 	struct gliutable *gl = 0;
 	int i;
 	msr_t msr;
@@ -334,7 +332,7 @@ static void GLPCIInit(void){
                  * base of 1M and top of around 256M
 		 */
 		/* we have to create a page-aligned (4KB page) address for base and top
-		 * So we need a high page aligned addresss (pah) and low page aligned address (pal)
+		 * so we need a high page aligned addresss (pah) and low page aligned address (pal)
 		 * pah is from msr.hi << 12 | msr.low >> 20. pal is msr.lo << 12
 		 */
 		printk(BIOS_DEBUG, "GLPCI r1: system msr.lo 0x%08x msr.hi 0x%08x\n", msr.lo, msr.hi);
@@ -504,8 +502,7 @@ static void GeodeLinkPriority(void)
 	}
 }
 
-/*
- * Get the GLIU0 shadow register settings.
+/* Get the GLIU0 shadow register settings.
  *
  * If the setShadow function is used then all shadow descriptors
  * will stay sync'ed.
@@ -513,12 +510,11 @@ static void GeodeLinkPriority(void)
 static uint64_t getShadow(void)
 {
 	msr_t msr;
-	msr = rdmsr(MSR_GLIU0_SHADOW);
+	msr = rdmsr(GLIU0_P2D_SC_0);
 	return ( ( (uint64_t) msr.hi ) << 32 ) | msr.lo;
 }
 
-/*
- * Set the cache RConf registers for the memory hole.
+/* Set the cache RConf registers for the memory hole.
  *
  * Keeps all cache shadow descriptors sync'ed.
  * This is part of the PCI lockup solution.
@@ -536,17 +532,17 @@ static void setShadowRCONF(uint32_t shadowHi, uint32_t shadowLo)
 	/* load up D000 settings in edx. */
 	for (bit = 8; (bit > 4); bit--) {
 		msr.hi <<= 8;
-		msr.hi |= 1;				/* cache disable PCI/Shadow memory */
+		msr.hi |= 1;			/* cache disable PCI/Shadow memory */
 		if (shadowByte && (1 << bit))
-			msr.hi |= 0x20;			/* write serialize PCI memory */
+			msr.hi |= 0x20;		/* write serialize PCI memory */
 	}
 
 	/* load up C000 settings in eax. */
 	for ( ; bit; bit--) {
 		msr.lo <<= 8;
-		msr.lo |= 1;				/* cache disable PCI/Shadow memory */
+		msr.lo |= 1;			/* cache disable PCI/Shadow memory */
 		if (shadowByte && (1 << bit))
-			msr.lo |= 0x20;			/* write serialize PCI memory */
+			msr.lo |= 0x20;		/* write serialize PCI memory */
 	}
 
 	wrmsr(CPU_RCONF_C0_DF, msr);
@@ -556,24 +552,23 @@ static void setShadowRCONF(uint32_t shadowHi, uint32_t shadowLo)
 	/* load up F000 settings in edx. */
 	for (bit = 8; (bit > 4); bit--) {
 		msr.hi <<= 8;
-		msr.hi |= 1;				/* cache disable PCI/Shadow memory */
+		msr.hi |= 1;			/* cache disable PCI/Shadow memory */
 		if (shadowByte && (1 << bit))
-			msr.hi |= 0x20;			/* write serialize PCI memory */
+			msr.hi |= 0x20;		/* write serialize PCI memory */
 	}
 
 	/* load up E000 settings in eax. */
 	for ( ; bit; bit--) {
 		msr.lo <<= 8;
-		msr.lo |= 1;				/* cache disable PCI/Shadow memory */
+		msr.lo |= 1;			/* cache disable PCI/Shadow memory */
 		if (shadowByte && (1 << bit))
-			msr.lo |= 0x20;			/* write serialize PCI memory */
+			msr.lo |= 0x20;		/* write serialize PCI memory */
 	}
 
 	wrmsr(CPU_RCONF_E0_FF, msr);
 }
 
-/*
- * Set the GLPCI registers for the memory hole.
+/* Set the GLPCI registers for the memory hole.
  * Keeps all cache shadow descriptors sync'ed.
  * Entry: EDX:EAX is the shadow settings
  */
@@ -588,8 +583,7 @@ static void setShadowGLPCI(uint32_t shadowHi, uint32_t shadowLo)
 	wrmsr(GLPCI_REN, msr);
 }
 
-/*
- * Set the GLIU SC register settings. Scans descriptor tables for SC_SHADOW.
+/* Set the GLIU SC register settings. Scans descriptor tables for SC_SHADOW.
  * Keeps all shadow descriptors sync'ed.
  * Entry: EDX:EAX is the shadow settings
  */
@@ -630,8 +624,7 @@ static void shadowRom(void)
 	setShadow(shadowSettings);
 }
 
-/*
- * Set up RCONF_DEFAULT and any other RCONF registers needed.
+/* Set up RCONF_DEFAULT and any other RCONF registers needed.
  *
  * DEVRC_RCONF_DEFAULT:
  * ROMRC(63:56) = 04h	 ; write protect ROMBASE
@@ -645,8 +638,7 @@ static void shadowRom(void)
 #define ROMBASE_RCONF_DEFAULT 0xFFFC0000
 #define ROMRC_RCONF_DEFAULT 0x25
 
-static void
-RCONFInit(void)
+static void RCONFInit(void)
 {
 	struct gliutable *gl = 0;
 	int i;
@@ -701,8 +693,32 @@ RCONFInit(void)
 	wrmsr(CPU_RCONF_BYPASS, msr);
 }
 
+uint32_t get_systop(void)
+{
+	struct gliutable *gl = 0;
+	uint32_t systop;
+	msr_t msr;
+	int i;
+
+	for (i = 0; gliu0table[i].desc_name != GL_END; i++) {
+		if (gliu0table[i].desc_type == R_SYSMEM) {
+			gl = &gliu0table[i];
+			break;
+		}
+	}
+	if (gl) {
+		msr = rdmsr(gl->desc_name);
+		systop = ((msr.hi & 0xFF) << 24) | ((msr.lo & 0xFFF00000) >> 8);
+		systop += 0x1000;	/* 4K */
+	} else {
+		systop =
+		    ((sizeram() - CONFIG_VIDEO_MB) * 1024) - SMM_SIZE - 1024;
+	}
+	return systop;
+}
+
 /* Core Logic initialization: Host bridge. */
-void northbridgeinit(void)
+void northbridge_init_early(void)
 {
 	msr_t msr;
 	int i;
@@ -714,10 +730,6 @@ void northbridgeinit(void)
 	GeodeLinkPriority();
 
 	shadowRom();
-
-	/* GeodeROM ensures that the BIOS waits the required 1 second before */
-	/* allowing anything to access PCI */
-	// PCIDelay();
 
 	RCONFInit();
 

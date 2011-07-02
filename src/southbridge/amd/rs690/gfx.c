@@ -114,7 +114,7 @@ static void rs690_internal_gfx_enable(device_t dev)
 {
 	u32 l_dword;
 	int i;
-	device_t k8_f0 = 0, k8_f2 = 0;
+	device_t k8_f2 = 0;
 	device_t nb_dev = dev_find_slot(0, 0);
 
 	printk(BIOS_INFO, "rs690_internal_gfx_enable dev=0x%p, nb_dev=0x%p.\n", dev,
@@ -128,13 +128,6 @@ static void rs690_internal_gfx_enable(device_t dev)
 
 	/* set TOM */
 	rs690_set_tom(nb_dev);
-
-	/* LPC DMA Deadlock workaround? */
-	k8_f0 = dev_find_slot(0, PCI_DEVFN(0x18, 0));
-	l_dword = pci_read_config32(k8_f0, 0x68);
-	l_dword &= ~(1 << 22);
-	l_dword |= (1 << 21);
-	pci_write_config32(k8_f0, 0x68, l_dword);
 
 	/* Enable 64bit mode. */
 	set_nbmc_enable_bits(nb_dev, 0x5f, 0, 1 << 9);
@@ -193,8 +186,13 @@ static void rs690_internal_gfx_enable(device_t dev)
 	/* TODO: the optimization of voltage and frequency */
 }
 
+static void gfx_dev_set_subsystem(struct device *dev, unsigned vendor, unsigned device)
+{
+	pci_write_config32(dev, 0x4c,  ((device & 0xffff) << 16) | (vendor & 0xffff));
+}
+
 static struct pci_operations lops_pci = {
-	.set_subsystem = pci_dev_set_subsystem,
+	.set_subsystem = gfx_dev_set_subsystem,
 };
 
 static struct device_operations pcie_ops = {

@@ -6,7 +6,12 @@ static void main(unsigned long bist)
 	if (boot_cpu()) {
 		bootblock_northbridge_init();
 		bootblock_southbridge_init();
+		bootblock_cpu_init();
 	}
+
+#if CONFIG_USE_OPTION_TABLE
+	sanitize_cmos();
+#endif
 
 	unsigned long entry;
 	if (do_normal_boot())

@@ -34,6 +34,7 @@
 #include "northbridge/intel/i945/i945.h"
 #include "northbridge/intel/i945/raminit.h"
 #include "southbridge/intel/i82801gx/i82801gx.h"
+#include "option_table.h"
 
 void setup_ich7_gpios(void)
 {
@@ -81,12 +82,16 @@ void setup_ich7_gpios(void)
 
 static void ich7_enable_lpc(void)
 {
+	int lpt_en = 0;
+	if (read_option(lpt, 0) != 0) {
+	       lpt_en = 1<<2; // enable LPT
+	}
 	// Enable Serial IRQ
 	pci_write_config8(PCI_DEV(0, 0x1f, 0), 0x64, 0xd0);
 	// decode range
 	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x80, 0x0007);
 	// decode range
-	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x82, 0x3f0f);
+	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x82, 0x3f0b | lpt_en);
 	// Enable 0x02e0 - 0x2ff
 	pci_write_config32(PCI_DEV(0, 0x1f, 0), 0x84, 0x001c02e1);
 	// Enable 0x600 - 0x6ff
@@ -281,12 +286,6 @@ void main(unsigned long bist)
 	early_superio_config();
 
 	/* Set up the console */
-	uart_init();
-
-#if CONFIG_USBDEBUG
-	i82801gx_enable_usbdebug(1);
-	early_usbdebug_init();
-#endif
 	console_init();
 
 	/* Halt if there was a built in self test failure */
@@ -327,7 +326,7 @@ void main(unsigned long bist)
 	dump_spd_registers();
 #endif
 
-	sdram_initialize(boot_mode);
+	sdram_initialize(boot_mode, NULL);
 
 	/* Perform some initialization that must run before stage2 */
 	early_ich7_init();
@@ -379,7 +378,7 @@ void main(unsigned long bist)
 			memcpy(resume_backup_memory, (void *)CONFIG_RAMBASE, HIGH_MEMORY_SAVE);
 
 		/* Magic for S3 resume */
-		pci_write_config32(PCI_DEV(0, 0x00, 0), SKPAD, 0xcafed00d);
+		pci_write_config32(PCI_DEV(0, 0x00, 0), SKPAD, SKPAD_ACPI_S3_MAGIC);
 	}
 #endif
 }

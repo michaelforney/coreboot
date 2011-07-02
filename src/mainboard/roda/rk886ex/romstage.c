@@ -36,6 +36,7 @@
 #include "northbridge/intel/i945/i945.h"
 #include "northbridge/intel/i945/raminit.h"
 #include "southbridge/intel/i82801gx/i82801gx.h"
+#include "option_table.h"
 
 void setup_ich7_gpios(void)
 {
@@ -43,24 +44,41 @@ void setup_ich7_gpios(void)
 	/* General Registers */
 	outl(0xbfc0f7c0, DEFAULT_GPIOBASE + 0x00);	/* GPIO_USE_SEL */
 	outl(0x70a87d83, DEFAULT_GPIOBASE + 0x04);	/* GP_IO_SEL */
-	outl(0x7dc07f83, DEFAULT_GPIOBASE + 0x0c);	/* GP_LVL */
+	// ------------------------------------------------------------
+	// 0 - GPO6  - Enable power of SATA channel 0
+	// 0 - GPO9  - Wireless LAN power on
+	// 0 - GPO15 - FAN on
+	// 1 - GPO22 - FWH WP
+	// 1 - GPO24 - GPS on
+	// 0 - GPO25 - External Antenna Mux on
+	// 0 - GPO26 - BT on
+	// 0 - GPO27 - GSM on
+	outl(0x01400000, DEFAULT_GPIOBASE + 0x0c);	/* GP_LVL */
+	// ------------------------------------------------------------
 	/* Output Control Registers */
 	outl(0x00000000, DEFAULT_GPIOBASE + 0x18);	/* GPO_BLINK */
 	/* Input Control Registers */
 	outl(0x00002180, DEFAULT_GPIOBASE + 0x2c);	/* GPI_INV */
 	outl(0x000100e8, DEFAULT_GPIOBASE + 0x30);	/* GPIO_USE_SEL2 */
 	outl(0x00000030, DEFAULT_GPIOBASE + 0x34);	/* GP_IO_SEL2 */
-	outl(0x00010030, DEFAULT_GPIOBASE + 0x38);	/* GP_LVL */
+	// ------------------------------------------------------------
+	// 1 - GPO48 - FWH TBL#
+	outl(0x00010000, DEFAULT_GPIOBASE + 0x38);	/* GP_LVL */
+	// ------------------------------------------------------------
 }
 
 static void ich7_enable_lpc(void)
 {
+	int lpt_en = 0;
+	if (read_option(lpt, 0) != 0) {
+	       lpt_en = 1<<2; // enable LPT
+	}
 	// Enable Serial IRQ
 	pci_write_config8(PCI_DEV(0, 0x1f, 0), 0x64, 0xd0);
 	// decode range
 	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x80, 0x0007);
 	// decode range
-	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x82, 0x3f0f);
+	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x82, 0x3f0b | lpt_en);
 	// Enable 0x02e0
 	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x84, 0x02e1);
 	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x86, 0x001c);
@@ -252,13 +270,6 @@ void main(unsigned long bist)
 	early_superio_config();
 
 	/* Set up the console */
-	uart_init();
-
-#if CONFIG_USBDEBUG
-	i82801gx_enable_usbdebug(1);
-	early_usbdebug_init();
-#endif
-
 	console_init();
 
 	/* Halt if there was a built in self test failure */
@@ -302,7 +313,7 @@ void main(unsigned long bist)
 	dump_spd_registers();
 #endif
 
-	sdram_initialize(boot_mode);
+	sdram_initialize(boot_mode, NULL);
 
 	/* Perform some initialization that must run before stage2 */
 	early_ich7_init();
@@ -356,7 +367,7 @@ void main(unsigned long bist)
 			memcpy(resume_backup_memory, (void *)CONFIG_RAMBASE, HIGH_MEMORY_SAVE);
 
 		/* Magic for S3 resume */
-		pci_write_config32(PCI_DEV(0, 0x00, 0), SKPAD, 0xcafed00d);
+		pci_write_config32(PCI_DEV(0, 0x00, 0), SKPAD, SKPAD_ACPI_S3_MAGIC);
 	}
 #endif
 }

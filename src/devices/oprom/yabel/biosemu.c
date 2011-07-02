@@ -58,37 +58,37 @@ biosemu(u8 *biosmem, u32 biosmem_size, struct device * dev, unsigned long rom_ad
 	int i = 0;
 #if CONFIG_X86EMU_DEBUG
 	debug_flags = 0;
-#if defined(CONFIG_X86EMU_DEBUG_JMP) && CONFIG_X86EMU_DEBUG_JMP
+#if CONFIG_X86EMU_DEBUG_JMP
 	debug_flags |= DEBUG_JMP;
 #endif
-#if defined(CONFIG_X86EMU_DEBUG_TRACE) && CONFIG_X86EMU_DEBUG_TRACE
+#if CONFIG_X86EMU_DEBUG_TRACE
 	debug_flags |= DEBUG_TRACE_X86EMU;
 #endif
-#if defined(CONFIG_X86EMU_DEBUG_PNP) && CONFIG_X86EMU_DEBUG_PNP
+#if CONFIG_X86EMU_DEBUG_PNP
 	debug_flags |= DEBUG_PNP;
 #endif
-#if defined(CONFIG_X86EMU_DEBUG_DISK) && CONFIG_X86EMU_DEBUG_DISK
+#if CONFIG_X86EMU_DEBUG_DISK
 	debug_flags |= DEBUG_DISK;
 #endif
-#if defined(CONFIG_X86EMU_DEBUG_PMM) && CONFIG_X86EMU_DEBUG_PMM
+#if CONFIG_X86EMU_DEBUG_PMM
 	debug_flags |= DEBUG_PMM;
 #endif
-#if defined(CONFIG_X86EMU_DEBUG_VBE) && CONFIG_X86EMU_DEBUG_VBE
+#if CONFIG_X86EMU_DEBUG_VBE
 	debug_flags |= DEBUG_VBE;
 #endif
-#if defined(CONFIG_X86EMU_DEBUG_INT10) && CONFIG_X86EMU_DEBUG_INT10
+#if CONFIG_X86EMU_DEBUG_INT10
 	debug_flags |= DEBUG_PRINT_INT10;
 #endif
-#if defined(CONFIG_X86EMU_DEBUG_INTERRUPTS) && CONFIG_X86EMU_DEBUG_INTERRUPTS
+#if CONFIG_X86EMU_DEBUG_INTERRUPTS
 	debug_flags |= DEBUG_INTR;
 #endif
-#if defined(CONFIG_X86EMU_DEBUG_CHECK_VMEM_ACCESS) && CONFIG_X86EMU_DEBUG_CHECK_VMEM_ACCESS
+#if CONFIG_X86EMU_DEBUG_CHECK_VMEM_ACCESS
 	debug_flags |= DEBUG_CHECK_VMEM_ACCESS;
 #endif
-#if defined(CONFIG_X86EMU_DEBUG_MEM) && CONFIG_X86EMU_DEBUG_MEM
+#if CONFIG_X86EMU_DEBUG_MEM
 	debug_flags |= DEBUG_MEM;
 #endif
-#if defined(CONFIG_X86EMU_DEBUG_IO) && CONFIG_X86EMU_DEBUG_IO
+#if CONFIG_X86EMU_DEBUG_IO
 	debug_flags |= DEBUG_IO;
 #endif
 
@@ -106,6 +106,9 @@ biosemu(u8 *biosmem, u32 biosmem_size, struct device * dev, unsigned long rom_ad
 		printf("Error: Device Expansion ROM invalid!\n");
 		return -1;
 	}
+	biosemu_add_special_memory(0, 0x500); // IVT + BDA
+	biosemu_add_special_memory(OPTION_ROM_CODE_SEGMENT << 4, 0x10000); // option ROM
+
 	rom_image = (u8 *) bios_device.img_addr;
 	DEBUG_PRINTF("executing rom_image from %p\n", rom_image);
 	DEBUG_PRINTF("biosmem at %p\n", biosmem);
@@ -129,7 +132,7 @@ biosemu(u8 *biosmem, u32 biosmem_size, struct device * dev, unsigned long rom_ad
 	// copy expansion ROM image to segment OPTION_ROM_CODE_SEGMENT
 	// NOTE: this sometimes fails, some bytes are 0x00... so we compare
 	// after copying and do some retries...
-	u8 *mem_img = biosmem + (OPTION_ROM_CODE_SEGMENT << 4);
+	u8 *mem_img = (u8*)(OPTION_ROM_CODE_SEGMENT << 4);
 	u8 copy_count = 0;
 	u8 cmp_result = 0;
 	do {
@@ -152,7 +155,7 @@ biosemu(u8 *biosmem, u32 biosmem_size, struct device * dev, unsigned long rom_ad
 				break;
 			}
 			clr_ci();
-			*(mem_img + i) = c;
+			my_wrb((u32)mem_img + i, c);
 		}
 #endif
 		copy_count++;
@@ -306,7 +309,7 @@ biosemu(u8 *biosmem, u32 biosmem_size, struct device * dev, unsigned long rom_ad
 	 * some boot device status in AX (see PNP BIOS Spec Section 3.3
 	 */
 	DEBUG_PRINTF_CS_IP("Option ROM Exit Status: %04x\n", M.x86.R_AX);
-#if defined(CONFIG_X86EMU_DEBUG) && CONFIG_X86EMU_DEBUG
+#if CONFIG_X86EMU_DEBUG
 	DEBUG_PRINTF("Exit Status Decode:\n");
 	if (M.x86.R_AX & 0x100) {	// bit 8
 		DEBUG_PRINTF

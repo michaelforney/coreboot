@@ -65,6 +65,7 @@ static  void print_t(const char *strval)
 #include "../amdmct/mct_ddr3/mcthdi.c"
 #include "../amdmct/mct_ddr3/mctndi_d.c"
 #include "../amdmct/mct_ddr3/mctchi_d.c"
+#include "../amdmct/mct_ddr3/modtrd.c"
 
 #if CONFIG_CPU_SOCKET_TYPE == 0x10
 //TODO: S1G1?
@@ -76,6 +77,9 @@ static  void print_t(const char *strval)
 #include "../amdmct/mct_ddr3/mctardk6.c"
 #elif CONFIG_CPU_SOCKET_TYPE == 0x13
 //ASB2
+#include "../amdmct/mct_ddr3/mctardk5.c"
+//C32
+#elif CONFIG_CPU_SOCKET_TYPE == 0x14
 #include "../amdmct/mct_ddr3/mctardk5.c"
 #endif
 
@@ -204,6 +208,9 @@ u32 mctGetLogicalCPUID(u32 Node)
 	case 0x10080:
 		ret = AMD_HY_D0;
 		break;
+	case 0x10081:
+		ret = AMD_HY_D1;
+		break;
 	default:
 		/* FIXME: mabe we should die() here. */
 		print_err("FIXME! CPU Version unknown or not supported! \n");
@@ -213,6 +220,11 @@ u32 mctGetLogicalCPUID(u32 Node)
 	return ret;
 }
 
+static u8 mctGetProcessorPackageType(void) {
+	/* FIXME: I guess this belongs wherever mctGetLogicalCPUID ends up ? */
+     u32 BrandId = cpuid_ebx(0x80000001);
+     return (u8)((BrandId >> 28) & 0x0F);
+}
 
 static void raminit_amdmct(struct sys_info *sysinfo)
 {

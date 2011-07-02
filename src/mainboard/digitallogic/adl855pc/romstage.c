@@ -14,7 +14,6 @@
 #include "northbridge/intel/i855/raminit.h"
 #include "northbridge/intel/i855/debug.c"
 #include "superio/winbond/w83627hf/early_serial.c"
-#include "cpu/x86/mtrr/earlymtrr.c"
 #include "cpu/x86/bist.h"
 #include <spd.h>
 
@@ -38,7 +37,6 @@ void main(unsigned long bist)
 	}
 
         w83627hf_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
-        uart_init();
         console_init();
 
 	/* Halt if there was a built in self test failure */

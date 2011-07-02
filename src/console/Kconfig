@@ -1,10 +1,17 @@
-menu "Console options"
+menu "Console"
 # TODO: Rename to SERIAL_CONSOLE once Kconfig transition is complete.
 config CONSOLE_SERIAL8250
 	bool "Serial port console output"
+	depends on HAVE_UART_IO_MAPPED
 	default y
 	help
-	  Send coreboot debug output to a serial port console.
+	  Send coreboot debug output to an I/O mapped serial port console.
+
+config CONSOLE_SERIAL8250MEM
+	bool "Serial port console output (memory mapped)"
+	depends on HAVE_UART_MEMORY_MAPPED
+	help
+	  Send coreboot debug output to a memory mapped serial port console.
 
 choice
 	prompt "Serial port"
@@ -43,7 +50,7 @@ config TTYS0_BASE
 choice
 	prompt "Baud rate"
 	default CONSOLE_SERIAL_115200
-	depends on CONSOLE_SERIAL8250
+	depends on CONSOLE_SERIAL8250 || CONSOLE_SERIAL8250MEM
 
 config CONSOLE_SERIAL_115200
 	bool "115200"
@@ -82,7 +89,7 @@ config TTYS0_BAUD
 config TTYS0_LCS
 	int
 	default 3
-	depends on CONSOLE_SERIAL8250
+	depends on CONSOLE_SERIAL8250 || CONSOLE_SERIAL8250MEM
 
 # Use "select HAVE_USBDEBUG" on southbridges which have Debug Port code.
 config HAVE_USBDEBUG
@@ -326,14 +333,14 @@ config NO_POST
 	bool "Don't show any POST codes"
 	default n
 
-config SERIAL_POST
-	bool "Show POST codes on the serial port console"
-	depends on CONSOLE_SERIAL8250 && !NO_POST
+config CONSOLE_POST
+	bool "Show POST codes on the debug console"
+	depends on !NO_POST
 	default n
 	help
 	  If enabled, coreboot will additionally print POST codes (which are
 	  usually displayed using a so-called "POST card" ISA/PCI/PCI-E
-	  device) on the serial console.
+	  device) on the debug console.
 
 endmenu
 

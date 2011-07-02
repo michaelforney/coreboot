@@ -26,15 +26,8 @@
 #include <cpu/x86/cache.h>
 #include <cpu/x86/smm.h>
 #include <device/pci_def.h>
+#include <pc80/mc146818rtc.h>
 #include "i82801gx.h"
-
-#define APM_CNT		0xb2
-#define   CST_CONTROL	0x85
-#define   PST_CONTROL	0x80
-#define   ACPI_DISABLE	0x1e
-#define   ACPI_ENABLE	0xe1
-#define   GNVS_UPDATE   0xea
-#define APM_STS		0xb3
 
 /* I945 */
 #define SMRAM		0x9d
@@ -336,6 +329,13 @@ static void southbridge_smi_sleep(unsigned int node, smm_state_save_area_t *stat
 	default: printk(BIOS_DEBUG, "SMI#: ERROR: SLP_TYP reserved\n"); break;
 	}
 
+	/* Unlock the SMI semaphore. We're currently in SMM, and the semaphore
+	 * will never be unlocked because the next outl will switch off the CPU.
+	 * This might open a small race between the smi_release_lock() and the outl()
+	 * for other SMI handlers. Not sure if this could cause trouble. */
+	 if (slp_typ == 5)
+		smi_release_lock();
+
 	/* Write back to the SLP register to cause the originally intended
 	 * event again. We need to set BIT13 (SLP_EN) though to make the
 	 * sleep happen.
@@ -362,34 +362,37 @@ static void southbridge_smi_apmc(unsigned int node, smm_state_save_area_t *state
 	/* Emulate B2 register as the FADT / Linux expects it */
 
 	reg8 = inb(APM_CNT);
+	if (mainboard_apm_cnt && mainboard_apm_cnt(reg8))
+		return;
+
 	switch (reg8) {
-	case CST_CONTROL:
+	case APM_CNT_CST_CONTROL:
 		/* Calling this function seems to cause
 		 * some kind of race condition in Linux
 		 * and causes a kernel oops
 		 */
 		printk(BIOS_DEBUG, "C-state control\n");
 		break;
-	case PST_CONTROL:
+	case APM_CNT_PST_CONTROL:
 		/* Calling this function seems to cause
 		 * some kind of race condition in Linux
 		 * and causes a kernel oops
 		 */
 		printk(BIOS_DEBUG, "P-state control\n");
 		break;
-	case ACPI_DISABLE:
+	case APM_CNT_ACPI_DISABLE:
 		pmctrl = inl(pmbase + PM1_CNT);
 		pmctrl &= ~SCI_EN;
 		outl(pmctrl, pmbase + PM1_CNT);
 		printk(BIOS_DEBUG, "SMI#: ACPI disabled.\n");
 		break;
-	case ACPI_ENABLE:
+	case APM_CNT_ACPI_ENABLE:
 		pmctrl = inl(pmbase + PM1_CNT);
 		pmctrl |= SCI_EN;
 		outl(pmctrl, pmbase + PM1_CNT);
 		printk(BIOS_DEBUG, "SMI#: ACPI enabled.\n");
 		break;
-	case GNVS_UPDATE:
+	case APM_CNT_GNVS_UPDATE:
 		if (smm_initialized) {
 			printk(BIOS_DEBUG, "SMI#: SMM structures already initialized!\n");
 			return;
@@ -408,6 +411,7 @@ static void southbridge_smi_apmc(unsigned int node, smm_state_save_area_t *state
 static void southbridge_smi_pm1(unsigned int node, smm_state_save_area_t *state_save)
 {
 	u16 pm1_sts;
+	volatile u8 cmos_status;
 
 	pm1_sts = reset_pm1_status();
 	dump_pm1_status(pm1_sts);
@@ -420,6 +424,12 @@ static void southbridge_smi_pm1(unsigned int node, smm_state_save_area_t *state_
 		u32 reg32;
 		reg32 = (7 << 10) | (1 << 13);
 		outl(reg32, pmbase + PM1_CNT);
+	}
+
+	if (pm1_sts & RTC_STS) {
+		/* read RTC status register to disable the interrupt */
+		cmos_status = cmos_read(RTC_REG_C);
+		printk(BIOS_DEBUG, "RTC IRQ status: %02X\n", cmos_status);
 	}
 }
 

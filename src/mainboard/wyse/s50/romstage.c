@@ -29,7 +29,6 @@
 #include "cpu/x86/bist.h"
 #include "cpu/x86/msr.h"
 #include <cpu/amd/gx2def.h>
-#include <cpu/amd/geode_post_code.h>
 #include <spd.h>
 #include "southbridge/amd/cs5536/early_smbus.c"
 #include "southbridge/amd/cs5536/early_setup.c"
@@ -63,7 +62,6 @@ void main(unsigned long bist)
 	/* cs5536_disable_internal_uart	 disable them. Set them up now... */
 	cs5536_setup_onchipuart(1);
 
-	uart_init();
 	console_init();
 
 	/* Halt if there was a built in self test failure */

@@ -27,6 +27,7 @@
 
 #include <cpu/x86/mtrr/earlymtrr.c>
 #include <northbridge/amd/amdfam10/raminit_amdmct.c>
+#include <reset.h>
 
 static void prep_fid_change(void);
 static void init_fidvid_stage2(u32 apicid, u32 nodeid);
@@ -71,7 +72,7 @@ static void for_each_ap(u32 bsp_apicid, u32 core_range, process_ap_t process_ap,
 	nodes = get_nodes();
 
 	if (!CONFIG_LOGICAL_CPUS ||
-	    read_option(CMOS_VSTART_multi_core, CMOS_VLEN_multi_core, 0) != 0) {	// 0 means multi core
+	    read_option(multi_core, 0) != 0) {	// 0 means multi core
 		disable_siblings = 1;
 	} else {
 		disable_siblings = 0;
@@ -156,7 +157,7 @@ static inline int lapic_remote_read(int apicid, int reg, u32 *pvalue)
 }
 
 #if CONFIG_SET_FIDVID
-static void init_fidvid_ap(u32 bsp_apicid, u32 apicid, u32 nodeid, u32 coreid);
+static void init_fidvid_ap(u32 apicid, u32 nodeid, u32 coreid);
 #endif
 
 static inline __attribute__ ((always_inline))
@@ -324,7 +325,9 @@ static u32 init_cpus(u32 cpu_init_detectedx)
 		 * This happens after HTinit.
 		 * The BSP runs this code in it's own path.
 		 */
+#if CONFIG_UPDATE_CPU_MICROCODE
 		update_microcode(cpuid_eax(1));
+#endif
 		cpuSetAMDMSR();
 
 #if CONFIG_SET_FIDVID
@@ -343,8 +346,7 @@ static u32 init_cpus(u32 cpu_init_detectedx)
 				printk(BIOS_DEBUG,
 				       "init_fidvid_ap(stage1) apicid: %02x\n",
 				       apicid);
-				init_fidvid_ap(bsp_apicid, apicid, id.nodeid,
-					       id.coreid);
+				init_fidvid_ap(apicid, id.nodeid, id.coreid);
 			}
 		}
 #endif

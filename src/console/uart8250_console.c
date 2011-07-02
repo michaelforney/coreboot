@@ -23,14 +23,7 @@
 
 static void ttyS0_init(void)
 {
-	static const unsigned char div[8] = { 1, 2, 3, 6, 12, 24, 48, 96 };
-	int b_index = 0;
-	unsigned int divisor = CONFIG_TTYS0_DIV;
-
-	if (get_option(&b_index, "baud_rate") == 0) {
-		divisor = div[b_index];
-	}
-	uart8250_init(CONFIG_TTYS0_BASE, divisor);
+	uart_init();
 }
 
 static void ttyS0_tx_byte(unsigned char data)

@@ -21,13 +21,13 @@ if BOARD_GETAC_P470
 config BOARD_SPECIFIC_OPTIONS # dummy
 	def_bool y
 	select ARCH_X86
-	select CPU_INTEL_CORE
 	select CPU_INTEL_SOCKET_MFCPGA478
 	select NORTHBRIDGE_INTEL_I945GM
 	select SOUTHBRIDGE_INTEL_I82801GX
 	select SOUTHBRIDGE_TI_PCIXX12
 	select SUPERIO_SMSC_FDC37N972
 	select SUPERIO_SMSC_SIO10N268
+	select EC_ACPI
 	select BOARD_HAS_FADT
 	select HAVE_ACPI_TABLES
 	select HAVE_PIRQ_TABLE
@@ -36,7 +36,6 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 	select HAVE_ACPI_RESUME
 	select HAVE_ACPI_SLIC
 	select MMCONF_SUPPORT
-	select AP_IN_SIPI_WAIT
 	select UDELAY_LAPIC
 	select HAVE_SMI_HANDLER
 	select BOARD_ROMSIZE_KB_1024
@@ -47,14 +46,6 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 config MAINBOARD_DIR
 	string
 	default getac/p470
-
-config DCACHE_RAM_BASE
-	hex
-	default 0xffdf8000
-
-config DCACHE_RAM_SIZE
-	hex
-	default 0x8000
 
 config MAINBOARD_PART_NUMBER
 	string
@@ -76,7 +67,7 @@ config MAX_PHYSICAL_CPUS
 	int
 	default 2
 
-config FALLBACK_VGA_BIOS_FILE
+config VGA_BIOS_FILE
 	string
 	default "getac-pci8086,27a2.rom"
 

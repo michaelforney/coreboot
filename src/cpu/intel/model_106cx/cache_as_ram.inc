@@ -18,14 +18,15 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <cpu/x86/car.h>
 #include <cpu/x86/stack.h>
 #include <cpu/x86/mtrr.h>
+#include <cpu/x86/post_code.h>
 
 #define CACHE_AS_RAM_SIZE CONFIG_DCACHE_RAM_SIZE
 #define CACHE_AS_RAM_BASE CONFIG_DCACHE_RAM_BASE
 
-	save_bist_result()
+	/* Save the BIST result. */
+	movl	%eax, %ebp
 
 cache_as_ram:
 	post_code(0x20)
@@ -66,12 +67,19 @@ clear_mtrrs:
 	xorl	%edx, %edx
 	wrmsr
 
-	enable_mtrr()
+	/* Enable MTRR. */
+	movl	$MTRRdefType_MSR, %ecx
+	rdmsr
+	orl	$(1 << 11), %eax
+	wrmsr
 
-	enable_l2_cache()
+	/* Enable L2 cache. */
+	movl	$0x11e, %ecx
+	rdmsr
+	orl	$(1 << 8), %eax
+	wrmsr
 
 	/* Enable cache (CR0.CD = 0, CR0.NW = 0). */
-	/* TODO: enable_cache()? But that doesn't have "invd". */
         movl	%cr0, %eax
 	andl	$(~((1 << 30) | (1 << 29))), %eax
 	invd
@@ -86,13 +94,15 @@ clear_mtrrs:
 	rep	stosl
 
 	/* Enable Cache-as-RAM mode by disabling cache. */
-	disable_cache()
+	movl	%cr0, %eax
+	orl	$(1 << 30), %eax
+	movl	%eax, %cr0
 
 #if defined(CONFIG_XIP_ROM_SIZE) && defined(CONFIG_XIP_ROM_BASE)
 	/* Enable cache for our code in Flash because we do XIP here */
 	movl	$MTRRphysBase_MSR(1), %ecx
 	xorl	%edx, %edx
-#if defined(CONFIG_TINY_BOOTBLOCK) && CONFIG_TINY_BOOTBLOCK
+#if CONFIG_TINY_BOOTBLOCK
 #define REAL_XIP_ROM_BASE AUTO_XIP_ROM_BASE
 #else
 #define REAL_XIP_ROM_BASE CONFIG_XIP_ROM_BASE
@@ -112,10 +122,13 @@ clear_mtrrs:
 	wrmsr
 #endif /* CONFIG_XIP_ROM_SIZE && CONFIG_XIP_ROM_BASE */
 
-	enable_cache()
+	/* Enable cache. */
+	movl	%cr0, %eax
+	andl	$(~((1 << 30) | (1 << 29))), %eax
+	movl	%eax, %cr0
 
 	/* Set up the stack pointer. */
-#if defined(CONFIG_USBDEBUG) && (CONFIG_USBDEBUG == 1)
+#if CONFIG_USBDEBUG
 	/* Leave some space for the struct ehci_debug_info. */
 	movl	$(CACHE_AS_RAM_BASE + CACHE_AS_RAM_SIZE - 4 - 128), %eax
 #else
@@ -123,8 +136,8 @@ clear_mtrrs:
 #endif
 	movl	%eax, %esp
 
-	restore_bist_result()
-
+	/* Restore the BIST result. */
+	movl	%ebp, %eax
 	movl	%esp, %ebp
 	pushl	%eax
 
@@ -137,11 +150,18 @@ clear_mtrrs:
 
 	post_code(0x30)
 
-	disable_cache()
+	/* Disable cache. */
+	movl	%cr0, %eax
+	orl	$(1 << 30), %eax
+	movl	%eax, %cr0
 
 	post_code(0x31)
 
-	disable_mtrr()
+	/* Disable MTRR. */
+	movl	$MTRRdefType_MSR, %ecx
+	rdmsr
+	andl	$(~(1 << 11)), %eax
+	wrmsr
 
 	post_code(0x31)
 
@@ -161,11 +181,17 @@ clear_mtrrs:
 
 	post_code(0x33)
 
-	enable_cache()
+	/* Enable cache. */
+	movl	%cr0, %eax
+	andl	$~((1 << 30) | (1 << 29)), %eax
+	movl	%eax, %cr0
 
 	post_code(0x36)
 
-	disable_cache()
+	/* Disable cache. */
+	movl	%cr0, %eax
+	orl	$(1 << 30), %eax
+	movl	%eax, %cr0
 
 	post_code(0x38)
 
@@ -182,11 +208,17 @@ clear_mtrrs:
 	post_code(0x39)
 
 	/* And enable cache again after setting MTRRs. */
-	enable_cache()
+	movl	%cr0, %eax
+	andl	$~((1 << 30) | (1 << 29)), %eax
+	movl	%eax, %cr0
 
 	post_code(0x3a)
 
-	enable_mtrr()
+	/* Enable MTRR. */
+	movl	$MTRRdefType_MSR, %ecx
+	rdmsr
+	orl	$(1 << 11), %eax
+	wrmsr
 
 	post_code(0x3b)
 
@@ -198,7 +230,7 @@ clear_mtrrs:
 	/* Clear boot_complete flag. */
 	xorl	%ebp, %ebp
 __main:
-	post_code(0x11)
+	post_code(POST_PREPARE_RAMSTAGE)
 	cld			/* Clear direction flag. */
 
 	movl	%ebp, %esi
@@ -209,7 +241,7 @@ __main:
 	call	copy_and_run
 
 .Lhlt:
-	post_code(0xee)
+	post_code(POST_DEAD_CODE)
 	hlt
 	jmp	.Lhlt
 

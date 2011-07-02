@@ -3,6 +3,7 @@
 \*****************************************************************************/
 
 #include "hexdump.h"
+#include <ctype.h>
 
 /* hexdump.c
  *
@@ -44,10 +45,6 @@
  */
 
 static void addrprint(FILE * outfile, uint64_t address, int width);
-static void hexprint(FILE * outfile, unsigned char byte);
-static void charprint(FILE * outfile, unsigned char byte,
-		      unsigned char nonprintable,
-		      is_printable_fn_t is_printable_fn);
 
 /*--------------------------------------------------------------------------
  * hexdump
@@ -70,16 +67,10 @@ void hexdump(const void *mem, int bytes, uint64_t addrprint_start,
 {
 	int bytes_left, index, i;
 	const unsigned char *p;
-	is_printable_fn_t is_printable_fn;
 
 	/* Quietly return if the caller asks us to do something unreasonable. */
 	if ((format->bytes_per_line <= 0) || (bytes < 0))
 		return;
-
-	is_printable_fn = format->is_printable_fn;
-
-	if (is_printable_fn == NULL)
-		is_printable_fn = default_is_printable_fn;
 
 	p = (const unsigned char *)mem;
 	index = 0;
@@ -99,7 +90,7 @@ void hexdump(const void *mem, int bytes, uint64_t addrprint_start,
 
 		/* display the bytes in hex */
 		for (i = 0;;) {
-			hexprint(outfile, p[index++]);
+			fprintf(outfile, "%02x", p[index++]);
 
 			if (++i >= format->bytes_per_line)
 				break;
@@ -111,9 +102,8 @@ void hexdump(const void *mem, int bytes, uint64_t addrprint_start,
 		fprintf(outfile, format->sep3);
 
 		/* display the bytes as characters */
-		for (i = 0; i < format->bytes_per_line; i++)
-			charprint(outfile, p[index++], format->nonprintable,
-				  is_printable_fn);
+		for (i = 0; i < format->bytes_per_line; i++, index++)
+			fputc(isprint(p[index])?p[index]:format->nonprintable, outfile);
 
 		fprintf(outfile, "\n");
 	}
@@ -128,7 +118,7 @@ void hexdump(const void *mem, int bytes, uint64_t addrprint_start,
 
 	/* display bytes for last line in hex */
 	for (i = 0; i < bytes_left; i++) {
-		hexprint(outfile, p[index++]);
+		fprintf(outfile, "%02x", p[index++]);
 		fprintf(outfile, format->sep2);
 	}
 
@@ -148,33 +138,13 @@ void hexdump(const void *mem, int bytes, uint64_t addrprint_start,
 
 	/* display bytes for last line as characters */
 	for (i = 0; i < bytes_left; i++)
-		charprint(outfile, p[index++], format->nonprintable,
-			  is_printable_fn);
+		fputc(isprint(p[index])?p[index++]:format->nonprintable, outfile);
 
 	/* pad the rest of the character area with spaces */
 	for (; i < format->bytes_per_line; i++)
 		fprintf(outfile, " ");
 
 	fprintf(outfile, "\n");
-}
-
-/*--------------------------------------------------------------------------
- * default_is_printable_fn
- *
- * Determine whether the input character is printable.  The proper behavior
- * for this type of function may be system-dependent.  This function takes a
- * conservative approach.  If it is not adequate for your purposes, you can
- * write your own.
- *
- * parameters:
- *     c: the input character
- *
- * return value:
- *     Return 1 if the input character is printable.  Otherwise return 0.
- *--------------------------------------------------------------------------*/
-int default_is_printable_fn(unsigned char c)
-{
-	return (c >= 0x20) && (c <= 0x7e);
 }
 
 /*--------------------------------------------------------------------------
@@ -216,41 +186,3 @@ static void addrprint(FILE * outfile, uint64_t address, int width)
 	}
 }
 
-/*--------------------------------------------------------------------------
- * hexprint
- *
- * Display a byte as a two digit hex value.
- *
- * parameters:
- *     outfile: the place where the output should be written
- *     byte:    the byte to display
- *--------------------------------------------------------------------------*/
-static void hexprint(FILE * outfile, unsigned char byte)
-{
-	static const char tbl[] = {
-		'0', '1', '2', '3', '4', '5', '6', '7',
-		'8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
-	};
-
-	fprintf(outfile, "%c%c", tbl[byte >> 4], tbl[byte & 0x0f]);
-}
-
-/*--------------------------------------------------------------------------
- * charprint
- *
- * Display a byte as its character representation.
- *
- * parameters:
- *     outfile:         the place where the output should be written
- *     byte:            the byte to display
- *     nonprintable:    a substitute character to display if the byte
- *                      represents a nonprintable character
- *     is_printable_fn: a function that returns a boolean value indicating
- *                      whether a given character is printable
- *--------------------------------------------------------------------------*/
-static void charprint(FILE * outfile, unsigned char byte,
-		      unsigned char nonprintable,
-		      is_printable_fn_t is_printable_fn)
-{
-	fprintf(outfile, "%c", is_printable_fn(byte) ? byte : nonprintable);
-}

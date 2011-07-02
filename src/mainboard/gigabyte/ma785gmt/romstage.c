@@ -61,7 +61,11 @@ static int spd_read_byte(u32 device, u32 address)
 #include "cpu/amd/quadcore/quadcore.c"
 #include "cpu/amd/car/post_cache_as_ram.c"
 #include "cpu/amd/microcode/microcode.c"
+
+#if CONFIG_UPDATE_CPU_MICROCODE
 #include "cpu/amd/model_10xxx/update_microcode.c"
+#endif
+
 #include "cpu/amd/model_10xxx/init_cpus.c"
 #include "northbridge/amd/amdfam10/early_ht.c"
 #include <spd.h>
@@ -79,7 +83,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 		/* mov bsp to bus 0xff when > 8 nodes */
 		set_bsp_node_CHtExtNodeCfgEn();
 		enumerate_ht_chain();
-		sb700_pci_port80();
+		sb7xx_51xx_pci_port80();
 	}
 
 	post_code(0x30);
@@ -92,19 +96,11 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	post_code(0x32);
 
 	enable_rs780_dev8();
-	sb700_lpc_init();
+	sb7xx_51xx_lpc_init();
 
 	it8718f_enable_serial(0, CONFIG_TTYS0_BASE);
 	it8718f_disable_reboot();
-	uart_init();
-
-#if CONFIG_USBDEBUG
-	sb700_enable_usbdebug(CONFIG_USBDEBUG_DEFAULT_PORT);
-	early_usbdebug_init();
-#endif
-
 	console_init();
-	printk(BIOS_DEBUG, "\n");
 
 //	dump_mem(CONFIG_DCACHE_RAM_BASE+CONFIG_DCACHE_RAM_SIZE-0x200, CONFIG_DCACHE_RAM_BASE+CONFIG_DCACHE_RAM_SIZE);
 
@@ -121,7 +117,9 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	/* Setup sysinfo defaults */
 	set_sysinfo_in_ram(0);
 
+#if CONFIG_UPDATE_CPU_MICROCODE
 	update_microcode(val);
+#endif
 	post_code(0x33);
 
 	cpuSetAMDMSR();
@@ -157,7 +155,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 
 	/* run _early_setup before soft-reset. */
 	rs780_early_setup();
-	sb700_early_setup();
+	sb7xx_51xx_early_setup();
 
 #if CONFIG_SET_FIDVID
 	msr = rdmsr(0xc0010071);
@@ -215,10 +213,44 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 //	die("After MCT init before CAR disabled.");
 
 	rs780_before_pci_init();
-	sb700_before_pci_init();
+	sb7xx_51xx_before_pci_init();
 
 	post_code(0x42);
 	printk(BIOS_DEBUG, "\n*** Yes, the copy/decompress is taking a while, FIXME!\n");
 	post_cache_as_ram();	// BSP switch stack to ram, copy then execute LB.
 	post_code(0x43);	// Should never see this post code.
+}
+
+/**
+ * BOOL AMD_CB_ManualBUIDSwapList(u8 Node, u8 Link, u8 **List)
+ * Description:
+ *	This routine is called every time a non-coherent chain is processed.
+ *	BUID assignment may be controlled explicitly on a non-coherent chain. Provide a
+ *	swap list. The first part of the list controls the BUID assignment and the
+ *	second part of the list provides the device to device linking.  Device orientation
+ *	can be detected automatically, or explicitly.  See documentation for more details.
+ *
+ *	Automatic non-coherent init assigns BUIDs starting at 1 and incrementing sequentially
+ *	based on each device's unit count.
+ *
+ * Parameters:
+ *	@param[in]  u8  node    = The node on which this chain is located
+ *	@param[in]  u8  link    = The link on the host for this chain
+ *	@param[out] u8** list   = supply a pointer to a list
+ *	@param[out] BOOL result = true to use a manual list
+ *				  false to initialize the link automatically
+ */
+BOOL AMD_CB_ManualBUIDSwapList (u8 node, u8 link, const u8 **List)
+{
+	static const u8 swaplist[] = { 0xFF, CONFIG_HT_CHAIN_UNITID_BASE, CONFIG_HT_CHAIN_END_UNITID_BASE, 0xFF };
+	/* If the BUID was adjusted in early_ht we need to do the manual override */
+	if ((CONFIG_HT_CHAIN_UNITID_BASE != 0) && (CONFIG_HT_CHAIN_END_UNITID_BASE != 0)) {
+		printk(BIOS_DEBUG, "AMD_CB_ManualBUIDSwapList()\n");
+		if ((node == 0) && (link == 0)) {	/* BSP SB link */
+			*List = swaplist;
+			return 1;
+		}
+	}
+
+	return 0;
 }

@@ -48,14 +48,6 @@ static void f71863fg_init(device_t dev)
 
 	switch(dev->path.pnp.device) {
 	/* TODO: Might potentially need code for HWM or FDC etc. */
-	case F71863FG_SP1:
-		res0 = find_resource(dev, PNP_IDX_IO0);
-		init_uart8250(res0->base, &conf->com1);
-		break;
-	case F71863FG_SP2:
-		res0 = find_resource(dev, PNP_IDX_IO0);
-		init_uart8250(res0->base, &conf->com2);
-		break;
 	case F71863FG_KBC:
 		res0 = find_resource(dev, PNP_IDX_IO0);
 		pc_keyboard_init(&conf->keyboard);
@@ -81,7 +73,7 @@ static void f71863fg_pnp_enable(device_t dev)
 {
 	pnp_enter_conf_state(dev);
 	pnp_set_logical_device(dev);
-	(dev->enabled) ? pnp_set_enable(dev, 1) : pnp_set_enable(dev, 0);
+	pnp_set_enable(dev, !!dev->enabled);
 	pnp_exit_conf_state(dev);
 }
 

@@ -98,6 +98,20 @@ config USE_OPTION_TABLE
 	  Enable this option if coreboot shall read options from the "CMOS"
 	  NVRAM instead of using hard coded values.
 
+config COMPRESS_RAMSTAGE
+	bool "Compress ramstage with LZMA"
+	default y
+	help
+	  Compress ramstage to save memory in the flash image. Note
+	  that decompression might slow down booting if the boot flash
+	  is connected through a slow Link (i.e. SPI)
+
+config INCLUDE_CONFIG_FILE
+  bool "Include the coreboot config file into the ROM image"
+	default y
+  help
+    Include in CBFS the coreboot config file that was used to compile the ROM image
+
 endmenu
 
 source src/mainboard/Kconfig
@@ -124,6 +138,8 @@ comment "Super I/O"
 source src/superio/Kconfig
 comment "Devices"
 source src/devices/Kconfig
+comment "Embedded Controllers"
+source src/ec/Kconfig
 
 endmenu
 
@@ -135,13 +151,6 @@ config PCI_BUS_SEGN_BITS
 	int
 	default 0
 
-config MAINBOARD_PCI_SUBSYSTEM_VENDOR_ID
-	hex
-	default 0x0
-
-config MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID
-	hex
-	default 0x0
 config PCI_ROM_RUN
 	bool
 	default n
@@ -162,10 +171,16 @@ config MMCONF_SUPPORT
 	bool
 	default n
 
-config ATI_RAGE_XL
-	bool
-
 source src/console/Kconfig
+
+# This should default to N and be set by SuperI/O drivers that have an UART
+config HAVE_UART_IO_MAPPED
+	bool
+	default y
+
+config HAVE_UART_MEMORY_MAPPED
+	bool
+	default n
 
 config HAVE_ACPI_RESUME
 	bool
@@ -333,7 +348,8 @@ menu "Payload"
 
 choice
 	prompt "Add a payload"
-	default PAYLOAD_NONE
+	default PAYLOAD_NONE if !ARCH_X86
+	default PAYLOAD_SEABIOS if ARCH_X86
 
 config PAYLOAD_NONE
 	bool "None"
@@ -355,20 +371,77 @@ config PAYLOAD_ELF
 	  You will be able to specify the location and file name of the
 	  payload image later.
 
+config PAYLOAD_SEABIOS
+	bool "SeaBIOS"
+	depends on ARCH_X86
+	help
+	  Select this option if you want to build a coreboot image
+	  with a SeaBIOS payload. If you don't know what this is
+	  about, just leave it enabled.
+
+	  See http://coreboot.org/Payloads for more information.
+
+config PAYLOAD_FILO
+	bool "FILO"
+	help
+	  Select this option if you want to build a coreboot image
+	  with a FILO payload. If you don't know what this is
+	  about, just leave it enabled.
+
+	  See http://coreboot.org/Payloads for more information.
+
 endchoice
 
-config FALLBACK_PAYLOAD_FILE
+choice
+	prompt "SeaBIOS version"
+	default SEABIOS_STABLE
+	depends on PAYLOAD_SEABIOS
+
+config SEABIOS_STABLE
+	bool "stable"
+	help
+	  Stable SeaBIOS version
+config SEABIOS_MASTER
+	bool "master"
+	help
+	  Newest SeaBIOS version
+endchoice
+
+choice
+	prompt "FILO version"
+	default FILO_STABLE
+	depends on PAYLOAD_FILO
+
+config FILO_STABLE
+	bool "0.6.0"
+	help
+	  Stable FILO version
+config FILO_MASTER
+	bool "HEAD"
+	help
+	  Newest FILO version
+endchoice
+
+config PAYLOAD_FILE
 	string "Payload path and filename"
 	depends on PAYLOAD_ELF
 	default "payload.elf"
 	help
 	  The path and filename of the ELF executable file to use as payload.
 
+config PAYLOAD_FILE
+	depends on PAYLOAD_SEABIOS
+	default "payloads/external/SeaBIOS/seabios/out/bios.bin.elf"
+
+config PAYLOAD_FILE
+	depends on PAYLOAD_FILO
+	default "payloads/external/FILO/filo/build/filo.elf"
+
 # TODO: Defined if no payload? Breaks build?
 config COMPRESSED_PAYLOAD_LZMA
 	bool "Use LZMA compression for payloads"
 	default y
-	depends on PAYLOAD_ELF
+	depends on PAYLOAD_ELF || PAYLOAD_SEABIOS || PAYLOAD_FILO
 	help
 	  In order to reduce the size payloads take up in the ROM chip
 	  coreboot can compress them using the LZMA algorithm.
@@ -390,14 +463,14 @@ config VGA_BIOS
 	  You will be able to specify the location and file name of the
 	  image later.
 
-config FALLBACK_VGA_BIOS_FILE
+config VGA_BIOS_FILE
 	string "VGA BIOS path and filename"
 	depends on VGA_BIOS
 	default "vgabios.bin"
 	help
 	  The path and filename of the file to use as VGA BIOS.
 
-config FALLBACK_VGA_BIOS_ID
+config VGA_BIOS_ID
 	string "VGA device PCI IDs"
 	depends on VGA_BIOS
 	default "1106,3230"
@@ -421,7 +494,7 @@ config INTEL_MBI
 	  You will be able to specify the location and file name of the
 	  image later.
 
-config FALLBACK_MBI_FILE
+config MBI_FILE
 	string "Intel MBI path and filename"
 	depends on INTEL_MBI
 	default "mbi.bin"
@@ -441,7 +514,7 @@ config BOOTSPLASH
 	  This option shows a graphical bootsplash screen. The grapics are
 	  loaded from the CBFS file bootsplash.jpg.
 
-config FALLBACK_BOOTSPLASH_FILE
+config BOOTSPLASH_FILE
 	string "Bootsplash path and filename"
 	depends on BOOTSPLASH
 	default "bootsplash.jpg"
@@ -574,6 +647,23 @@ config DEBUG_MALLOC
 	  This option enables additional malloc related debug messages.
 
 	  Note: This option will increase the size of the coreboot image.
+
+	  If unsure, say N.
+endif
+
+config DEBUG_ACPI
+	def_bool n
+
+# Only visible if debug level is DEBUG (7) or SPEW (8) as it does additional
+# printk(BIOS_DEBUG, ...) calls.
+if DEFAULT_CONSOLE_LOGLEVEL_7 || DEFAULT_CONSOLE_LOGLEVEL_8
+config DEBUG_ACPI
+	bool "Output verbose ACPI debug messages"
+	default n
+	help
+	  This option enables additional ACPI related debug messages.
+
+	  Note: This option will slightly increase the size of the coreboot image.
 
 	  If unsure, say N.
 endif

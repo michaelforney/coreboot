@@ -18,7 +18,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#include <cpu/x86/car.h>
 #include <cpu/x86/mtrr.h>
 #include <cpu/amd/mtrr.h>
 
@@ -46,7 +45,8 @@
  *   xmm3: Backup EBX
  */
 
-	save_bist_result()
+	/* Save the BIST result. */
+	movl	%eax, %ebp
 
 	/*
 	 * For normal part %ebx already contain cpu_init_detected
@@ -56,7 +56,10 @@
 cache_as_ram_setup:
 	post_code(0xa0)
 
-	enable_sse()
+	/* Enable SSE. */
+	movl	%cr4, %eax
+	orl	$(3 << 9), %eax
+	movl	%eax, %cr4
 
 	/* Figure out the CPU family. */
 	cvtsi2sd %ebx, %xmm3
@@ -74,7 +77,7 @@ cache_as_ram_setup:
 	/* Check if cpu_init_detected. */
 	movl	$MTRRdefType_MSR, %ecx
 	rdmsr
-	andl	$(1 << 11), %eax
+	andl	$MTRRdefTypeEn, %eax
 	movl	%eax, %ebx	/* We store the status. */
 
 	jmp_if_k8(CAR_FAM10_out_post_errata)
@@ -278,7 +281,7 @@ clear_fixed_var_mtrr_out:
 
 #if defined(CONFIG_XIP_ROM_SIZE) && defined(CONFIG_XIP_ROM_BASE)
 
-#if defined(CONFIG_TINY_BOOTBLOCK) && CONFIG_TINY_BOOTBLOCK
+#if CONFIG_TINY_BOOTBLOCK
 #define REAL_XIP_ROM_BASE AUTO_XIP_ROM_BASE
 #else
 #define REAL_XIP_ROM_BASE CONFIG_XIP_ROM_BASE
@@ -291,11 +294,11 @@ clear_fixed_var_mtrr_out:
 	xorl	%edx, %edx
 	/*
 	 * IMPORTANT: The two lines below can _not_ be written like this:
-	 *   movl $(REAL_XIP_ROM_BASE | MTRR_TYPE_WRBACK), %eax
+	 *   movl $(REAL_XIP_ROM_BASE | MTRR_TYPE_WRPROT), %eax
 	 * http://www.coreboot.org/pipermail/coreboot/2010-October/060855.html
 	 */
 	movl	$REAL_XIP_ROM_BASE, %eax
-	orl	$MTRR_TYPE_WRBACK, %eax
+	orl	$MTRR_TYPE_WRPROT, %eax
 	wrmsr
 
 	movl	$MTRRphysMask_MSR(1), %ecx
@@ -303,7 +306,7 @@ clear_fixed_var_mtrr_out:
 	jmp_if_k8(wbcache_post_fam10_setup)
 	movl	$0xffff, %edx /* (1 << (CONFIG_CPU_ADDR_BITS - 32)) - 1 for FAM10 (CONFIG_CPU_ADDR_BITS = 48) */
 wbcache_post_fam10_setup:
-	movl	$(~(CONFIG_XIP_ROM_SIZE - 1) | 0x800), %eax
+	movl	$(~(CONFIG_XIP_ROM_SIZE - 1) | MTRRphysMaskValid), %eax
 	wrmsr
 #endif /* CONFIG_XIP_ROM_SIZE && CONFIG_XIP_ROM_BASE */
 
@@ -321,7 +324,10 @@ wbcache_post_fam10_setup:
 
 	post_code(0xa1)
 
-	enable_cache()
+	/* Enable cache. */
+	movl	%cr0, %eax
+	andl	$(~((1 << 30) | (1 << 29))), %eax
+	movl	%eax, %cr0
 
 	jmp_if_k8(fam10_end_part1)
 
@@ -403,9 +409,13 @@ CAR_FAM10_ap_out:
 
 	post_code(0xa5)
 
-	disable_sse()
+	/* Disable SSE. */
+	movl	%cr4, %eax
+	andl	$~(3 << 9), %eax
+	movl	%eax, %cr4
 
-	restore_bist_result()
+	/* Restore the BIST result. */
+	movl	%ebp, %eax
 
 	/* We need to set EBP? No need. */
 	movl	%esp, %ebp

@@ -9,7 +9,6 @@
 #include "cpu/x86/bist.h"
 #include "cpu/x86/msr.h"
 #include <cpu/amd/gx2def.h>
-#include <cpu/amd/geode_post_code.h>
 #include "southbridge/amd/cs5535/cs5535.h"
 #include "southbridge/amd/cs5535/early_smbus.c"
 #include "southbridge/amd/cs5535/early_setup.c"
@@ -82,7 +81,6 @@ void main(unsigned long bist)
 	msr_init();
 
 	w83627hf_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
-	uart_init();
 	console_init();
 
 	cs5535_early_setup();

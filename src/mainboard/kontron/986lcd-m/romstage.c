@@ -58,12 +58,16 @@ void setup_ich7_gpios(void)
 
 static void ich7_enable_lpc(void)
 {
+	int lpt_en = 0;
+	if (read_option(lpt, 0) != 0) {
+		lpt_en = 1<<2; // enable LPT
+	}
 	// Enable Serial IRQ
 	pci_write_config8(PCI_DEV(0, 0x1f, 0), 0x64, 0xd0);
 	// Set COM1/COM2 decode range
 	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x80, 0x0010);
 	// Enable COM1/COM2/KBD/SuperIO1+2
-	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x82, 0x340b);
+	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x82, 0x340b | lpt_en);
 	// Enable HWM at 0xa00
 	pci_write_config32(PCI_DEV(0, 0x1f, 0), 0x84, 0x00fc0a01);
 	// COM3 decode
@@ -224,18 +228,18 @@ static void rcba_config(void)
 	reg32 = FD_ACMOD|FD_ACAUD|FD_PATA;
 	reg32 |= FD_PCIE6|FD_PCIE5|FD_PCIE4;
 
-	if (read_option(CMOS_VSTART_ethernet1, CMOS_VLEN_ethernet1, 0) != 0) {
+	if (read_option(ethernet1, 0) != 0) {
 		printk(BIOS_DEBUG, "Disabling ethernet adapter 1.\n");
 		reg32 |= FD_PCIE1;
 	}
-	if (read_option(CMOS_VSTART_ethernet2, CMOS_VLEN_ethernet2, 0) != 0) {
+	if (read_option(ethernet2, 0) != 0) {
 		printk(BIOS_DEBUG, "Disabling ethernet adapter 2.\n");
 		reg32 |= FD_PCIE2;
 	} else {
 		if (reg32 & FD_PCIE1)
 			port_shuffle = 1;
 	}
-	if (read_option(CMOS_VSTART_ethernet3, CMOS_VLEN_ethernet3, 0) != 0) {
+	if (read_option(ethernet3, 0) != 0) {
 		printk(BIOS_DEBUG, "Disabling ethernet adapter 3.\n");
 		reg32 |= FD_PCIE3;
 	} else {
@@ -331,13 +335,6 @@ void main(unsigned long bist)
 	early_superio_config_w83627thg();
 
 	/* Set up the console */
-	uart_init();
-
-#if CONFIG_USBDEBUG
-	i82801gx_enable_usbdebug(1);
-	early_usbdebug_init();
-#endif
-
 	console_init();
 
 	/* Halt if there was a built in self test failure */
@@ -378,7 +375,7 @@ void main(unsigned long bist)
 	dump_spd_registers();
 #endif
 
-	sdram_initialize(boot_mode);
+	sdram_initialize(boot_mode, NULL);
 
 	/* Perform some initialization that must run before stage2 */
 	early_ich7_init();
@@ -434,7 +431,7 @@ void main(unsigned long bist)
 			memcpy(resume_backup_memory, (void *)CONFIG_RAMBASE, HIGH_MEMORY_SAVE);
 
 		/* Magic for S3 resume */
-		pci_write_config32(PCI_DEV(0, 0x00, 0), SKPAD, 0xcafed00d);
+		pci_write_config32(PCI_DEV(0, 0x00, 0), SKPAD, SKPAD_ACPI_S3_MAGIC);
 	}
 #endif
 }

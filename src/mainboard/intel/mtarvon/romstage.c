@@ -31,7 +31,6 @@
 #include "southbridge/intel/i3100/early_lpc.c"
 #include "northbridge/intel/i3100/raminit.h"
 #include "superio/intel/i3100/i3100.h"
-#include "cpu/x86/mtrr/earlymtrr.c"
 #include "superio/intel/i3100/early_serial.c"
 #include "northbridge/intel/i3100/memory_initialized.c"
 #include "cpu/x86/bist.h"
@@ -83,7 +82,6 @@ void main(unsigned long bist)
 	i3100_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
 	i3100_configure_uart_clk(SERIAL_DEV, I3100_UART_CLK_PREDIVIDE_26);
 
-	uart_init();
 	console_init();
 
 	/* Prevent the TCO timer from rebooting us */

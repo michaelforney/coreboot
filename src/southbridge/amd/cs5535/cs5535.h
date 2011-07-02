@@ -70,6 +70,7 @@
 #define ATA_SB_GLD_MSR_CONF	(MSR_SB_ATA + 0x01)
 #define ATA_SB_GLD_MSR_ERR	(MSR_SB_ATA + 0x03)
 #define ATA_SB_GLD_MSR_PM	(MSR_SB_ATA + 0x04)
+#define ATA_SB_IDE_CFG		(MSR_SB_ATA + 0x10)
 
 /* AC97 */
 #define AC97_SB_GLD_MSR_CONF	(MSR_SB_AC97 + 0x01)
@@ -91,12 +92,12 @@
 #define MDD_LBAR_MFGPT		(MSR_SB_MDD + 0x0D)
 #define MDD_LBAR_ACPI		(MSR_SB_MDD + 0x0E)
 #define MDD_LBAR_PMS		(MSR_SB_MDD + 0x0F)
-#define MDD_LBAR_FLSH0		(MSR_SB_MDD + 0x010)
-#define MDD_LBAR_FLSH1		(MSR_SB_MDD + 0x011)
-#define MDD_LBAR_FLSH2		(MSR_SB_MDD + 0x012)
-#define MDD_LBAR_FLSH3		(MSR_SB_MDD + 0x013)
-#define MDD_PIN_OPT		(MSR_SB_MDD + 0x015)
-#define MDD_NORF_CNTRL		(MSR_SB_MDD + 0x018)
+#define MDD_LBAR_FLSH0		(MSR_SB_MDD + 0x10)
+#define MDD_LBAR_FLSH1		(MSR_SB_MDD + 0x11)
+#define MDD_LBAR_FLSH2		(MSR_SB_MDD + 0x12)
+#define MDD_LBAR_FLSH3		(MSR_SB_MDD + 0x13)
+#define MDD_PIN_OPT		(MSR_SB_MDD + 0x15)
+#define MDD_NORF_CNTRL		(MSR_SB_MDD + 0x18)
 
 /* GPIO */
 #define GPIOL_2_SET		(1 << 2)
@@ -114,7 +115,7 @@
 /* Flash Memory Mask values */
 #define FLASH_MEM_4K		0xFFFFF000
 
-#if !defined(ASSEMBLY) && !defined(__ROMCC__)
+#if !defined(__ASSEMBLER__) && !defined(__ROMCC__)
 #if defined(__PRE_RAM__)
 void cs5535_disable_internal_uart(void);
 #else

@@ -68,7 +68,11 @@ static inline int spd_read_byte(unsigned device, unsigned address)
 #include "southbridge/nvidia/mcp55/early_setup_car.c"
 #include "cpu/amd/car/post_cache_as_ram.c"
 #include "cpu/amd/microcode/microcode.c"
+
+#if CONFIG_UPDATE_CPU_MICROCODE
 #include "cpu/amd/model_10xxx/update_microcode.c"
+#endif
+
 #include "cpu/amd/model_10xxx/init_cpus.c"
 #include "northbridge/amd/amdfam10/early_ht.c"
 
@@ -129,9 +133,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	w83627hf_set_clksel_48(DUMMY_DEV);
 	w83627hf_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
 
-	uart_init();
 	console_init();
-	printk(BIOS_DEBUG, "\n");
 
 	/* Halt if there was a built in self test failure */
 	report_bist_failure(bist);
@@ -145,7 +147,9 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	/* Setup sysinfo defaults */
 	set_sysinfo_in_ram(0);
 
+#if CONFIG_UPDATE_CPU_MICROCODE
 	update_microcode(val);
+#endif
 	post_code(0x33);
 
 	cpuSetAMDMSR();
@@ -239,4 +243,38 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 	// printk(BIOS_DEBUG, "\n*** Yes, the copy/decompress is taking a while, FIXME!\n");
 	post_cache_as_ram(); // BSP switch stack to ram, copy + execute stage 2
 	post_code(0x42);     // Should never see this post code.
+}
+
+/**
+ * BOOL AMD_CB_ManualBUIDSwapList(u8 Node, u8 Link, u8 **List)
+ * Description:
+ *	This routine is called every time a non-coherent chain is processed.
+ *	BUID assignment may be controlled explicitly on a non-coherent chain. Provide a
+ *	swap list. The first part of the list controls the BUID assignment and the
+ *	second part of the list provides the device to device linking.  Device orientation
+ *	can be detected automatically, or explicitly.  See documentation for more details.
+ *
+ *	Automatic non-coherent init assigns BUIDs starting at 1 and incrementing sequentially
+ *	based on each device's unit count.
+ *
+ * Parameters:
+ *	@param[in]  u8  node    = The node on which this chain is located
+ *	@param[in]  u8  link    = The link on the host for this chain
+ *	@param[out] u8** list   = supply a pointer to a list
+ *	@param[out] BOOL result = true to use a manual list
+ *				  false to initialize the link automatically
+ */
+BOOL AMD_CB_ManualBUIDSwapList (u8 node, u8 link, const u8 **List)
+{
+	static const u8 swaplist[] = { 0xFF, CONFIG_HT_CHAIN_UNITID_BASE, CONFIG_HT_CHAIN_END_UNITID_BASE, 0xFF };
+	/* If the BUID was adjusted in early_ht we need to do the manual override */
+	if ((CONFIG_HT_CHAIN_UNITID_BASE != 0) && (CONFIG_HT_CHAIN_END_UNITID_BASE != 0)) {
+		printk(BIOS_DEBUG, "AMD_CB_ManualBUIDSwapList()\n");
+		if ((node == 0) && (link == 0)) {	/* BSP SB link */
+			*List = swaplist;
+			return 1;
+		}
+	}
+
+	return 0;
 }

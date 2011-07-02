@@ -135,14 +135,6 @@ static void w83627hf_init(device_t dev)
 		return;
 
 	switch(dev->path.pnp.device) {
-	case W83627HF_SP1:
-		res0 = find_resource(dev, PNP_IDX_IO0);
-		init_uart8250(res0->base, &conf->com1);
-		break;
-	case W83627HF_SP2:
-		res0 = find_resource(dev, PNP_IDX_IO0);
-		init_uart8250(res0->base, &conf->com2);
-		break;
 	case W83627HF_KBC:
 		pc_keyboard_init(&conf->keyboard);
 		break;
@@ -179,12 +171,9 @@ static void w83627hf_pnp_enable_resources(device_t dev)
 
 static void w83627hf_pnp_enable(device_t dev)
 {
-	if (dev->enabled)
-		return;
-
 	pnp_enter_ext_func_mode(dev);
 	pnp_set_logical_device(dev);
-	pnp_set_enable(dev, 0);
+	pnp_set_enable(dev, !!dev->enabled);
 	pnp_exit_ext_func_mode(dev);
 }
 

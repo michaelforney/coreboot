@@ -33,7 +33,7 @@
 #define INPUT_LINE_MAX 256
 #define MAX_VALUE_BYTE_LENGTH 64
 
-#define TMPFILE_LEN 256
+#define TMPFILE_LEN 25600
 #define TMPFILE_TEMPLATE "/build_opt_tbl_XXXXXX"
 
 static unsigned char cmos_table[4096];
@@ -142,8 +142,9 @@ static void display_usage(char *name)
 	printf("                       [--option filename]\n");
 	printf("                       [--header filename]\n\n");
 	printf("--config = Build the definitions table from the given file.\n");
+	printf("--binary = Output a binary file with the definitions.\n");
 	printf("--option = Output a C source file with the definitions.\n");
-	printf("--header = Ouput a C header file with the definitions.\n");
+	printf("--header = Output a C header file with the definitions.\n");
 	exit(1);
 }
 
@@ -253,6 +254,7 @@ int main(int argc, char **argv)
 {
 	int i;
 	char *config=0;
+	char *binary=0;
 	char *option=0;
 	char *header=0;
 	FILE *fp;
@@ -274,6 +276,7 @@ int main(int argc, char **argv)
 	int enum_length;
 	int len;
 	char buf[16];
+	char val;
 
         for(i=1;i<argc;i++) {
                 if(argv[i][0]!='-') {
@@ -287,6 +290,12 @@ int main(int argc, char **argv)
                                                         display_usage(argv[0]);
                                                 }
                                                 config=argv[++i];
+                                                break;
+                                        case 'b':  /* Emit a binary file */
+                                                if(strcmp(&argv[i][2],"binary")) {
+                                                        display_usage(argv[0]);
+                                                }
+                                                binary=argv[++i];
                                                 break;
                                         case 'o':  /* use a cmos definitions table file */
                                                 if(strcmp(&argv[i][2],"option")) {
@@ -363,8 +372,9 @@ int main(int argc, char **argv)
 		}
 
 		/* skip commented and blank lines */
-		if(line[0]=='#') continue;
-		if(line[strspn(line," ")]=='\n') continue;
+		val = line[strspn(line," ")];
+		/* takes care of *nix, Mac and Windows line ending formats */
+		if (val=='#' || val=='\n' || val=='\r') continue;
 		/* scan in the input data */
 		sscanf(line,"%d %d %c %d %s",
 			&ce->bit,&ce->length,&uc,&ce->config_id,&ce->name[0]);
@@ -519,8 +529,7 @@ int main(int argc, char **argv)
 	/* See if we want to output a C source file */
 	if(option) {
 		int err=0;
-		strncpy(tempfilename, dirname(strdup(option)), TMPFILE_LEN);
-	        strncat(tempfilename, TMPFILE_TEMPLATE, TMPFILE_LEN);
+		snprintf(tempfilename, TMPFILE_LEN, "%s%s", dirname(strdup(option)), TMPFILE_TEMPLATE);
 		tempfile = mkstemp(tempfilename);
 		if(tempfile == -1) {
                         perror("Error - Could not create temporary file");
@@ -534,7 +543,7 @@ int main(int argc, char **argv)
 		}
 
 		/* write the header */
-        	if(!fwrite("unsigned char option_table[] = {",1,32,fp)) {
+        	if(fwrite("unsigned char option_table[] = {",1,32,fp) != 32) {
         	        perror("Error - Could not write image file");
         	        fclose(fp);
 			unlink(tempfilename);
@@ -542,14 +551,14 @@ int main(int argc, char **argv)
         	}
 		/* write the array values */
 		for(i=0; i<(int)(ct->size-1); i++) {
-			if(!(i%10) && !err) err=!fwrite("\n\t",1,2,fp);
+			if(!(i%10) && !err) err=(fwrite("\n\t",1,2,fp) != 2);
 			sprintf(buf,"0x%02x,",cmos_table[i]);
-			if(!err) err=!fwrite(buf,1,5,fp);
+			if(!err) err=(fwrite(buf,1,5,fp) != 5);
 		}
 		/* write the end */
 		sprintf(buf,"0x%02x\n",cmos_table[i]);
-		if(!err) err=!fwrite(buf,1,4,fp);
-        	if(!fwrite("};\n",1,3,fp)) {
+		if(!err) err=(fwrite(buf,1,4,fp) != 4);
+        	if(fwrite("};\n",1,3,fp) != 3) {
         	        perror("Error - Could not write image file");
         	        fclose(fp);
 			unlink(tempfilename);
@@ -566,13 +575,46 @@ int main(int argc, char **argv)
 		}
 	}
 
+	/* See if we also want to output a binary file */
+	if(binary) {
+		int err=0;
+		snprintf(tempfilename, TMPFILE_LEN, "%s%s", dirname(strdup(binary)), TMPFILE_TEMPLATE);
+		tempfile = mkstemp(tempfilename);
+		if(tempfile == -1) {
+                        perror("Error - Could not create temporary file");
+                        exit(1);
+		}
+
+		if((fp=fdopen(tempfile,"wb"))==NULL){
+			perror("Error - Could not open temporary file");
+			unlink(tempfilename);
+			exit(1);
+		}
+
+		/* write the array values */
+		if(fwrite(cmos_table, (int)(ct->size-1), 1, fp) != 1) {
+        	        perror("Error - Could not write image file");
+        	        fclose(fp);
+			unlink(tempfilename);
+        	        exit(1);
+		}
+
+        	fclose(fp);
+		UNLINK_IF_NECESSARY(binary);
+		if (rename(tempfilename, binary)) {
+			fprintf(stderr, "Error - Could not write %s: ", binary);
+			perror(NULL);
+			unlink(tempfilename);
+			exit(1);
+		}
+	}
+
 	/* See if we also want to output a C header file */
 	if (header) {
 		struct cmos_option_table *hdr;
 		struct lb_record *ptr, *end;
 
-		strncpy(tempfilename, dirname(strdup(header)), TMPFILE_LEN);
-	        strncat(tempfilename, TMPFILE_TEMPLATE, TMPFILE_LEN);
+		snprintf(tempfilename, TMPFILE_LEN, "%s%s", dirname(strdup(header)), TMPFILE_TEMPLATE);
 		tempfile = mkstemp(tempfilename);
 		if(tempfile == -1) {
 			perror("Error - Could not create temporary file");
