@@ -120,6 +120,7 @@ void *memalign(size_t align, size_t size);
  */
 long int strtol(const char *s, char **nptr, int base);
 unsigned long int strtoul(const char *s, char **nptr, int base);
+long atol(const char *nptr);
 
 /** @} */
 
@@ -140,5 +141,7 @@ void exit(int status) __attribute__ ((noreturn));
 #define abort() halt()    /**< Alias for the halt() function */
 
 /** @} */
+
+void qsort(void *aa, size_t n, size_t es, int (*cmp)(const void *, const void *));
 
 #endif
